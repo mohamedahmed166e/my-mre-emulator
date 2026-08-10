@@ -20,7 +20,9 @@ jobs:
       - name: Compile MRE Core to WebAssembly
         run: |
           cd mre-core
-          zig build-exe src/root.zig -target wasm32-freestanding -O ReleaseFast --name handyplay || zig build-exe src/main.zig -target wasm32-freestanding -O ReleaseFast --name handyplay
+          ENTRY_FILE=$(find . -name "*.zig" ! -name "build.zig" | head -n 1)
+          echo "Compiling entry file: $ENTRY_FILE"
+          zig build-exe "$ENTRY_FILE" -target wasm32-freestanding -O ReleaseFast --name handyplay
           cp handyplay.wasm ../
 
       - name: Upload Compiled WASM File
