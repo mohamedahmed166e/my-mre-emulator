@@ -17,9 +17,11 @@ jobs:
         with:
           version: 0.11.0
 
-      - name: Compile Core to WebAssembly
+      - name: Compile MRE Core to WebAssembly
         run: |
+          cd mre-core
           zig build-exe src/main.zig -target wasm32-freestanding -O ReleaseFast --name handyplay
+          mv handyplay.wasm ../
 
       - name: Upload Compiled WASM File
         uses: actions/upload-artifact@v3
