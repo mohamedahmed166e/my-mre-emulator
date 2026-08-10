@@ -20,7 +20,7 @@ jobs:
       - name: Compile MRE Core to WebAssembly
         run: |
           cd mre-core
-          zig build-exe frontends/libretro/libretro.zig -target wasm32-freestanding -O ReleaseFast --rdynamic --export=retro_init --export=retro_load_game --export=retro_run -femit-bin=../handyplay.wasm
+          zig build-lib frontends/libretro/libretro.zig -target wasm32-freestanding -O ReleaseFast -dynamic -rdynamic -femit-bin=../handyplay.wasm
 
       - name: Upload Compiled WASM File
         uses: actions/upload-artifact@v4
