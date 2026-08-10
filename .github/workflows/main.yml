@@ -1,3 +1,4 @@
+
 name: Build WASM Emulator Core
 
 on:
@@ -15,14 +16,12 @@ jobs:
       - name: Setup Zig Compiler
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.13.0
+          version: 0.11.0
 
       - name: Compile MRE Core to WebAssembly
         run: |
           cd mre-core
-          zig build wasm -Doptimize=ReleaseFast
-          cp zig-out/bin/handyplay.wasm ../handyplay.wasm
-
+          zig build-lib frontends/libretro/libretro.zig -target wasm32-freestanding -O ReleaseFast -dynamic -rdynamic -femit-bin=../handyplay.wasm
       - name: Upload Compiled WASM File
         uses: actions/upload-artifact@v4
         with:
