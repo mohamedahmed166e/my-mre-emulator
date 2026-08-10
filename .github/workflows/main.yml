@@ -17,11 +17,11 @@ jobs:
         with:
           version: 0.13.0
 
-      - name: Compile Cores to WebAssembly
+      - name: Compile MRE Core to WebAssembly
         run: |
-          chmod +x build-cores.sh
-          ./build-cores.sh || true
-          find . -name "*.wasm" -exec cp {} ./handyplay.wasm \;
+          cd mre-core
+          zig build -Dtarget=wasm32-freestanding -Doptimize=ReleaseFast
+          cp zig-out/bin/*.wasm ../handyplay.wasm || cp zig-out/lib/*.wasm ../handyplay.wasm || find . -name "*.wasm" -exec cp {} ../handyplay.wasm \;
 
       - name: Upload Compiled WASM File
         uses: actions/upload-artifact@v4
