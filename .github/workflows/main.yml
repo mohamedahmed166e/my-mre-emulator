@@ -15,13 +15,13 @@ jobs:
       - name: Setup Zig Compiler
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.12.0
+          version: 0.11.0
 
       - name: Compile MRE Core to WebAssembly
         run: |
           cd mre-core
-          zig build -Dtarget=wasm32-freestanding -Doptimize=ReleaseFast
-          cp zig-out/bin/*.wasm ../handyplay.wasm || cp zig-out/lib/*.wasm ../handyplay.wasm || find . -name "*.wasm" -exec cp {} ../handyplay.wasm \;
+          zig build-exe src/root.zig -target wasm32-freestanding -O ReleaseFast --name handyplay || zig build-exe src/main.zig -target wasm32-freestanding -O ReleaseFast --name handyplay
+          cp handyplay.wasm ../
 
       - name: Upload Compiled WASM File
         uses: actions/upload-artifact@v4
