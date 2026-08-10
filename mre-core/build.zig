@@ -6,24 +6,23 @@ const unicorn_root = "../vendor/unicorn";
 /// Attach Unicorn include/lib/link to a module so every consumer inherits it.
 fn addUnicorn(mod: *std.Build.Module) void {
     mod.link_libc = true;
-    mod.addIncludePath(.{ .path = unicorn_root ++ "/include" });
-    mod.addLibraryPath(.{ .path = unicorn_root ++ "/build" });
+    mod.addIncludePath(.{ .cwd_relative = unicorn_root ++ "/include" });
+    mod.addLibraryPath(.{ .cwd_relative = unicorn_root ++ "/build" });
     mod.linkSystemLibrary("unicorn", .{});
 }
 
 /// Attach the vendored TinySoundFont
 fn addTsf(b: *std.Build, mod: *std.Build.Module) void {
-    _ = b;
-    mod.addIncludePath(.{ .path = "../vendor/TinySoundFont" });
-    mod.addCSourceFile(.{ .file = .{ .path = "core/tsf_impl.c" }, .flags = &.{"-O2"} });
-    mod.addIncludePath(.{ .path = "../vendor/minimp3" });
-    mod.addCSourceFile(.{ .file = .{ .path = "core/mp3_impl.c" }, .flags = &.{"-O2"} });
+    mod.addIncludePath(.{ .cwd_relative = "../vendor/TinySoundFont" });
+    mod.addCSourceFile(.{ .file = b.path("core/tsf_impl.c"), .flags = &.{"-O2"} });
+    mod.addIncludePath(.{ .cwd_relative = "../vendor/minimp3" });
+    mod.addCSourceFile(.{ .file = b.path("core/mp3_impl.c"), .flags = &.{"-O2"} });
 }
 
 fn addSdl(mod: *std.Build.Module) void {
     mod.link_libc = true;
-    mod.addIncludePath(.{ .path = "/opt/homebrew/include" });
-    mod.addLibraryPath(.{ .path = "/opt/homebrew/lib" });
+    mod.addIncludePath(.{ .cwd_relative = "/opt/homebrew/include" });
+    mod.addLibraryPath(.{ .cwd_relative = "/opt/homebrew/lib" });
     mod.linkSystemLibrary("SDL3", .{});
 }
 
@@ -33,18 +32,34 @@ pub fn build(b: *std.Build) void {
 
     // --- core module (frontend-agnostic VM + loader + memory) ----------------
     const core = b.addModule("core", .{
-        .source_file = .{ .path = "core/mreemu.zig" },
-        .dependencies = &.{},
+        .root_source_file = b.path("core/mreemu.zig"),
+        .target = target,
+        .optimize = optimize,
     });
     addUnicorn(core);
     addTsf(b, core);
 
+    // helper to make a tool exe that imports core
+    const Tool = struct {
+        fn add(bb: *std.Build, c: *std.Build.Module, t: std.Build.ResolvedTarget, o: std.builtin.OptimizeMode, name: []const u8, src: []const u8, step_name: []const u8, desc: []const u8) void {
+            const mod = bb.createModule(.{ .root_source_file = bb.path(src), .target = t, .optimize = o });
+            mod.addImport("core", c);
+            const exe = bb.addExecutable(.{ .name = name, .root_module = mod });
+            bb.installArtifact(exe);
+            const run = bb.addRunArtifact(exe);
+            if (bb.args) |args| run.addArgs(args);
+            bb.step(step_name, desc).dependOn(&run.step);
+        }
+    };
+
     // --- vxp -> elf extractor -------------------
     const extract = b.addExecutable(.{
         .name = "vxp-extract",
-        .root_source_file = .{ .path = "src/vxp_extract.zig" },
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/vxp_extract.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
     b.installArtifact(extract);
     const run_extract = b.addRunArtifact(extract);
@@ -52,47 +67,23 @@ pub fn build(b: *std.Build) void {
     b.step("extract", "Extract a .vxp -> .elf").dependOn(&run_extract.step);
 
     // --- Phase 0 smoke ------------------
-    const smoke_exe = b.addExecutable(.{
-        .name = "uc-smoke",
-        .root_source_file = .{ .path = "tools/uc_smoke.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-    addUnicorn(&smoke_exe.root_module);
-    b.installArtifact(smoke_exe);
-    b.step("smoke", "Run the Unicorn smoke test").dependOn(&b.addRunArtifact(smoke_exe).step);
+    const smoke_mod = b.createModule(.{ .root_source_file = b.path("tools/uc_smoke.zig"), .target = target, .optimize = optimize });
+    addUnicorn(smoke_mod);
+    const uc_smoke = b.addExecutable(.{ .name = "uc-smoke", .root_module = smoke_mod });
+    b.installArtifact(uc_smoke);
+    b.step("smoke", "Run the Unicorn smoke test").dependOn(&b.addRunArtifact(uc_smoke).step);
 
     // --- tools / frontends ----------------------------------------------------
-    const tools = [_]struct { name: []const u8, src: []const u8, step: []const u8, desc: []const u8 }{
-        .{ .name = "loadtest", .src = "tools/loadtest.zig", .step = "loadtest", .desc = "Load a .vxp and report layout" },
-        .{ .name = "vxp2elf", .src = "tools/vxp2elf.zig", .step = "vxp2elf", .desc = "Emit relocated ELF" },
-        .{ .name = "run", .src = "tools/run.zig", .step = "run", .desc = "Load and run a .vxp headless" },
-        .{ .name = "natives-from-c", .src = "tools/natives_from_c.zig", .step = "natives-from-c", .desc = "Classify natives" },
-    };
-
-    inline for (tools) |t| {
-        const exe = b.addExecutable(.{
-            .name = t.name,
-            .root_source_file = .{ .path = t.src },
-            .target = target,
-            .optimize = optimize,
-        });
-        exe.root_module.addModule("core", core);
-        b.installArtifact(exe);
-        const run_cmd = b.addRunArtifact(exe);
-        if (b.args) |args| run_cmd.addArgs(args);
-        b.step(t.step, t.desc).dependOn(&run_cmd.step);
-    }
+    Tool.add(b, core, target, optimize, "loadtest", "tools/loadtest.zig", "loadtest", "Load a .vxp and report layout");
+    Tool.add(b, core, target, optimize, "vxp2elf", "tools/vxp2elf.zig", "vxp2elf", "Load a .vxp and emit relocated ELF");
+    Tool.add(b, core, target, optimize, "run", "tools/run.zig", "run", "Load and run a .vxp headless");
+    Tool.add(b, core, target, optimize, "natives-from-c", "tools/natives_from_c.zig", "natives-from-c", "Classify natives");
 
     // SDL3 live window
-    const sdl_exe = b.addExecutable(.{
-        .name = "mre-sdl",
-        .root_source_file = .{ .path = "frontends/libretro/core.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-    sdl_exe.root_module.addModule("core", core);
-    addSdl(&sdl_exe.root_module);
+    const sdl_mod = b.createModule(.{ .root_source_file = b.path("frontends/libretro/core.zig"), .target = target, .optimize = optimize });
+    sdl_mod.addImport("core", core);
+    addSdl(sdl_mod);
+    const sdl_exe = b.addExecutable(.{ .name = "mre-sdl", .root_module = sdl_mod });
     b.installArtifact(sdl_exe);
     const run_sdl = b.addRunArtifact(sdl_exe);
     if (b.args) |args| run_sdl.addArgs(args);
@@ -100,43 +91,28 @@ pub fn build(b: *std.Build) void {
 
     // --- unit tests -----------------------------------------------------------
     const test_step = b.step("test", "Run core unit tests");
-    const test_files = [_][]const u8{
-        "core/memory.zig",
-        "core/loader/tags.zig",
-        "core/codecs/png.zig",
-        "core/codecs/gif.zig",
-        "core/codecs/wav.zig",
-    };
-    inline for (test_files) |tf| {
-        const t = b.addTest(.{
-            .root_source_file = .{ .path = tf },
-            .target = target,
-            .optimize = optimize,
-        });
-        test_step.dependOn(&b.addRunArtifact(t).step);
+    for ([_][]const u8{ "core/memory.zig", "core/loader/tags.zig", "core/codecs/png.zig", "core/codecs/gif.zig", "core/codecs/wav.zig" }) |root| {
+        const tmod = b.createModule(.{ .root_source_file = b.path(root), .target = target, .optimize = optimize });
+        test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = tmod })).step);
     }
-
-    const audio_test = b.addTest(.{
-        .root_source_file = .{ .path = "core/audio.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-    audio_test.root_module.link_libc = true;
-    addTsf(b, &audio_test.root_module);
-    test_step.dependOn(&b.addRunArtifact(audio_test).step);
+    {
+        const tmod = b.createModule(.{ .root_source_file = b.path("core/audio.zig"), .target = target, .optimize = optimize });
+        tmod.link_libc = true;
+        addTsf(b, tmod);
+        test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = tmod })).step);
+    }
 
     // --- native libretro core --------------------------------------------------
     {
-        const lr = b.addSharedLibrary(.{
-            .name = "mre_libretro",
-            .root_source_file = .{ .path = "frontends/libretro/core.zig" },
+        const lr_mod = b.createModule(.{
+            .root_source_file = b.path("frontends/libretro/core.zig"),
             .target = target,
             .optimize = optimize,
         });
-        lr.root_module.addModule("core", core);
-        addUnicorn(&lr.root_module);
-
-        const ext = switch (target.getOsTag()) {
+        lr_mod.addImport("core", core);
+        addUnicorn(lr_mod);
+        const lr = b.addLibrary(.{ .name = "mre_libretro", .root_module = lr_mod, .linkage = .dynamic });
+        const ext = switch (target.result.os.tag) {
             .windows => "dll",
             .macos, .ios, .tvos, .watchos => "dylib",
             else => "so",
@@ -150,18 +126,23 @@ pub fn build(b: *std.Build) void {
 
     // --- WASM libretro core ----------------------------------------------------
     {
-        const wasm_target = std.zig.CrossTarget{
+        const wasm_target = b.resolveTargetQuery(.{
             .cpu_arch = .wasm32,
             .os_tag = .freestanding,
-        };
+        });
 
-        const wasm_lib = b.addSharedLibrary(.{
-            .name = "handyplay",
-            .root_source_file = .{ .path = "frontends/libretro/core.zig" },
+        const wasm_mod = b.createModule(.{
+            .root_source_file = b.path("frontends/libretro/core.zig"),
             .target = wasm_target,
             .optimize = optimize,
         });
 
+        const wasm_lib = b.addExecutable(.{
+            .name = "handyplay",
+            .root_module = wasm_mod,
+        });
+
+        wasm_lib.entry = .disabled;
         wasm_lib.rdynamic = true;
 
         const wasm_inst = b.addInstallArtifact(wasm_lib, .{
