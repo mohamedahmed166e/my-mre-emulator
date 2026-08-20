@@ -35,8 +35,6 @@ jobs:
           curl -sSL "https://raw.githubusercontent.com/lieff/minimp3/master/minimp3_ex.h" -o mre-core/core/minimp3_ex.h
           curl -sSL "https://raw.githubusercontent.com/schellingb/tinysoundfont/master/tsf.h" -o mre-core/core/tsf.h
           curl -sSL "https://raw.githubusercontent.com/schellingb/tinysoundfont/master/tml.h" -o mre-core/core/tml.h
-          echo "=== HEADERS VERIFIED ==="
-          ls -la mre-core/core/
 
       - name: Setup Emscripten Toolchain
         uses: mymindstorm/setup-emsdk@v14
@@ -50,7 +48,7 @@ jobs:
       - name: Prepare Web Assets
         run: |
           cp index.html dist/
-          echo "=== DIST CONTENTS FOR DEPLOYMENT ==="
+          echo "=== FINAL DIST FOLDER CONTENTS FOR DEPLOYMENT ==="
           ls -la dist/
 
       - name: Upload Artifact
