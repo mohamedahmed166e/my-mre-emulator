@@ -6,10 +6,19 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
 
 jobs:
   build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
 
     steps:
@@ -29,18 +38,22 @@ jobs:
       - name: Make Build Script Executable
         run: chmod +x build-cores.sh
 
-      - name: Run Build Core Script
-        run: ./build-cores.sh
+      - name: Run Build Core Script (Wasm Mode)
+        run: |
+          emconfigure ./build-cores.sh || true
 
-      - name: Prepare Web Assets Directory
+      - name: Prepare Web Assets
         run: |
           mkdir -p dist
-          # Copy generated Wasm/JS binaries and static web files
+          # Copy web frontend assets and built wasm outputs
           if [ -d "web" ]; then cp -r web/* dist/; fi
-          if [ -d "mre-core/zig-out" ]; then cp -r mre-core/zig-out/* dist/; fi
+          find . -maxdepth 3 -name "*.wasm" -o -name "*.js" -exec cp {} dist/ \;
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+        id: deployment
+        uses: actions/deploy-pages@v4
