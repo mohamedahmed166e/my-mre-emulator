@@ -45,13 +45,13 @@ jobs:
       - name: Run Build Core Script
         run: ./build-cores.sh
 
-      - name: Prepare Web Assets
+      - name: Prepare Web Assets for Deployment
         run: |
           cp index.html dist/
-          echo "=== FINAL DIST FOLDER CONTENTS FOR DEPLOYMENT ==="
+          echo "=== VERIFYING DIST CONTENTS ==="
           ls -la dist/
 
-      - name: Upload Artifact
+      - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
