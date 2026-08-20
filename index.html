@@ -30,6 +30,11 @@
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
+        #status {
+            color: #aaa;
+            font-size: 14px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -41,34 +46,57 @@
     </div>
 
     <canvas id="canvas" width="240" height="320" tabindex="1"></canvas>
+    <div id="status">Initializing...</div>
 
     <script>
         var Module = {
             canvas: (function() {
                 return document.getElementById('canvas');
-            })()
+            })(),
+            onRuntimeInitialized: function() {
+                document.getElementById('status').innerText = "Wasm Engine Ready. Load a .vxp file.";
+            }
         };
+
+        // Fallback file list auto-loader
+        const possibleCores = ['mre_core.js', 'mre.js', 'exen_core.js', 'mrp_core.js'];
+        let loaded = false;
+
+        possibleCores.forEach(core => {
+            if (loaded) return;
+            let script = document.createElement('script');
+            script.src = core;
+            script.onload = () => {
+                loaded = true;
+                console.log('Successfully loaded Wasm JS glue:', core);
+            };
+            document.body.appendChild(script);
+        });
 
         document.getElementById('vxpInput').addEventListener('change', function(e) {
             var file = e.target.files[0];
             if (!file) return;
+
+            document.getElementById('status').innerText = "Loading " + file.name + "...";
 
             var reader = new FileReader();
             reader.onload = function(evt) {
                 var arrayBuffer = evt.target.result;
                 var uint8Array = new Uint8Array(arrayBuffer);
 
-                // Mount binary into Emscripten Virtual File System if Module initialized
                 if (typeof FS !== 'undefined') {
                     FS.writeFile('/app.vxp', uint8Array);
-                    console.log('Successfully loaded app.vxp into VFS');
+                    document.getElementById('status').innerText = "Running " + file.name;
+
+                    if (typeof Module._run_vxp === 'function') Module._run_vxp();
+                    else if (typeof Module._main === 'function') Module._main();
+                    else if (typeof callMain === 'function') callMain(['/app.vxp']);
+                } else {
+                    document.getElementById('status').innerText = "Error: FS Virtual File System not attached.";
                 }
             };
             reader.readAsArrayBuffer(file);
         });
     </script>
-    
-    <!-- Dynamically link Emscripten JS glue artifact -->
-    <script src="mre_core.js" onerror="console.warn('mre_core.js not found yet in root dist')"></script>
 </body>
 </html>
