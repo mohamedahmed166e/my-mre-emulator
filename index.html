@@ -46,7 +46,7 @@
     </div>
 
     <canvas id="canvas" width="240" height="320" tabindex="1"></canvas>
-    <div id="status">Initializing...</div>
+    <div id="status">Loading Wasm Engine...</div>
 
     <script>
         var Module = {
@@ -54,25 +54,44 @@
                 return document.getElementById('canvas');
             })(),
             onRuntimeInitialized: function() {
-                document.getElementById('status').innerText = "Wasm Engine Ready. Load a .vxp file.";
+                console.log("Emscripten Runtime & FS Ready.");
+                document.getElementById('status').innerText = "Wasm Engine Ready. Select a .vxp file to start.";
             }
         };
 
-        // Fallback file list auto-loader
-        const possibleCores = ['mre_core.js', 'mre.js', 'exen_core.js', 'mrp_core.js'];
-        let loaded = false;
+        // Fallback loader that checks all potential compiled core outputs
+        const candidateCores = [
+            'mre_libretro.js',
+            'mre-core.js',
+            'mre_core.js',
+            'mre.js',
+            'exen_libretro.js',
+            'mrp_libretro.js'
+        ];
 
-        possibleCores.forEach(core => {
-            if (loaded) return;
-            let script = document.createElement('script');
-            script.src = core;
+        function tryLoadCore(index) {
+            if (index >= candidateCores.length) {
+                if (typeof FS === 'undefined') {
+                    document.getElementById('status').innerText = "Error: No compiled Wasm core found on server.";
+                }
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = candidateCores[index];
             script.onload = () => {
-                loaded = true;
-                console.log('Successfully loaded Wasm JS glue:', core);
+                console.log("Successfully attached core script:", candidateCores[index]);
+            };
+            script.onerror = () => {
+                tryLoadCore(index + 1);
             };
             document.body.appendChild(script);
-        });
+        }
 
+        // Start loading available cores
+        tryLoadCore(0);
+
+        // Handle .vxp file upload and injection into Emscripten virtual FS
         document.getElementById('vxpInput').addEventListener('change', function(e) {
             var file = e.target.files[0];
             if (!file) return;
@@ -85,12 +104,21 @@
                 var uint8Array = new Uint8Array(arrayBuffer);
 
                 if (typeof FS !== 'undefined') {
-                    FS.writeFile('/app.vxp', uint8Array);
-                    document.getElementById('status').innerText = "Running " + file.name;
+                    try {
+                        FS.writeFile('/app.vxp', uint8Array);
+                        document.getElementById('status').innerText = "Running " + file.name;
 
-                    if (typeof Module._run_vxp === 'function') Module._run_vxp();
-                    else if (typeof Module._main === 'function') Module._main();
-                    else if (typeof callMain === 'function') callMain(['/app.vxp']);
+                        if (typeof Module._run_vxp === 'function') {
+                            Module._run_vxp('/app.vxp');
+                        } else if (typeof Module._main === 'function') {
+                            Module._main();
+                        } else if (typeof callMain === 'function') {
+                            callMain(['/app.vxp']);
+                        }
+                    } catch (err) {
+                        console.error("FS Error:", err);
+                        document.getElementById('status').innerText = "FS Write Error: " + err.message;
+                    }
                 } else {
                     document.getElementById('status').innerText = "Error: FS Virtual File System not attached.";
                 }
