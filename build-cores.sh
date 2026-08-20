@@ -25,6 +25,7 @@ while IFS= read -r dir; do
     fi
 done < <(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u)
 
+# Compile with ASYNCIFY to allow Emscripten main loop execution without unwinding
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
@@ -32,6 +33,8 @@ emcc $C_FILES \
   -s FORCE_FILESYSTEM=1 \
   -s ALLOW_MEMORY_GROWTH=1 \
   -s INVOKE_RUN=0 \
+  -s ASYNCIFY=1 \
+  -s EXIT_RUNTIME=0 \
   -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
   -s WARN_ON_UNDEFINED_SYMBOLS=0 \
   -s EXPORT_ALL=1 \
