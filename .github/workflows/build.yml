@@ -15,21 +15,22 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Setup Zig Compiler
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.0
+
       - name: Setup MSYS2 Dependencies
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
           update: true
+          path-type: inherit
           install: >-
             mingw-w64-x86_64-unicorn
             mingw-w64-x86_64-sdl3
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-pkg-config
-
-      - name: Setup Zig Compiler
-        uses: mlugg/setup-zig@v2
-        with:
-          version: 0.13.0
 
       - name: Build Executable
         shell: msys2 {0}
