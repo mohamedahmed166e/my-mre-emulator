@@ -80,8 +80,6 @@
 
                         if (typeof Module._run_vxp_app === 'function') {
                             console.log("Executing via Module.ccall...");
-                            
-                            // Safe string execution without calling Module._malloc
                             Module.ccall('run_vxp_app', 'number', ['string'], [filePath]);
                         } else if (typeof Module._main === 'function') {
                             console.log("Fallback executing via _main...");
@@ -101,6 +99,7 @@
         });
     </script>
 
+    <!-- Script loaded directly from repository root -->
     <script src="mre_core.js"></script>
 </body>
 </html>
