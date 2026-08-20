@@ -45,9 +45,20 @@ jobs:
 
       - name: Prepare Web Assets
         run: |
+          # Copy index.html into dist
           cp index.html dist/
-          echo "=== DIST CONTENTS ==="
+
+          # Move any compiled JS or WASM files into dist/ root
+          find . -type f \( -name "*.wasm" -o -name "*.js" \) ! -path "./dist/*" -exec cp -v {} dist/ \;
+
+          echo "=== FINAL DIST CONTENTS ==="
           ls -la dist/
+
+          # Validate output exists
+          if [ ! -f "dist/mre_core.js" ] && [ ! -f "dist/mre.js" ]; then
+            echo "ERROR: WebAssembly JS bundle was not created in dist/"
+            exit 1
+          fi
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
