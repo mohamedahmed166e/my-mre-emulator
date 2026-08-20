@@ -15,24 +15,28 @@ if [ ! -d "$CORE_DIR" ]; then
     exit 1
 fi
 
-# Find all C files inside mre-core
+# Find all C source files
 C_FILES=$(find "$CORE_DIR" -type f -name "*.c")
 
-if [ -z "$C_FILES" ]; then
-    echo "ERROR: No .c files found in $CORE_DIR"
-    exit 1
-fi
+# Automatically discover and add all directories containing header files (.h)
+INCLUDE_FLAGS=""
+for dir in $(find "$CORE_DIR" -type f -name "*.h" -exec dirname {} \; | sort -u); do
+    INCLUDE_FLAGS="$INCLUDE_FLAGS -I$dir"
+done
 
-echo "Found C sources:"
-echo "$C_FILES"
+echo "Include paths configured:"
+echo "$INCLUDE_FLAGS"
 
-# Compile directly using Emscripten to output mre_core.js and mre_core.wasm
-emcc $C_FILES -O2 \
+# Compile with dynamic include paths, Virtual File System support, and exported methods
+emcc $C_FILES \
+  $INCLUDE_FLAGS \
+  -O2 \
   -s WASM=1 \
   -s FORCE_FILESYSTEM=1 \
-  -s EXPORTED_RUNTIME_METHODS='["FS","callMain"]' \
   -s ALLOW_MEMORY_GROWTH=1 \
+  -s EXPORTED_RUNTIME_METHODS='["FS","callMain","cwrap","ccall"]' \
+  -s EXPORTED_FUNCTIONS='["_main"]' \
   -o "$DIST/mre_core.js"
 
-echo "=== BUILD OUTPUT CONTENTS ==="
+echo "=== BUILD SUCCESSFUL ==="
 ls -la "$DIST"
