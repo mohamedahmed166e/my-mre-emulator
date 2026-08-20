@@ -25,7 +25,7 @@ while IFS= read -r dir; do
     fi
 done < <(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u)
 
-# Export functions and runtime helpers without forcing fatal build errors on missing C symbols
+# Compile while forcing symbol visibility across all C sources
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
@@ -36,7 +36,7 @@ emcc $C_FILES \
   -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
   -s WARN_ON_UNDEFINED_SYMBOLS=0 \
   -s EXPORT_ALL=1 \
-  -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall","getValue","setValue"]' \
+  -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall","getValue","setValue","UTF8ToString"]' \
   -o "$DIST/mre_core.js"
 
 echo "=== BUILD COMPLETE ==="
