@@ -12,11 +12,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-      - name: Clone Unicorn Submodule
+      - name: Clone Unicorn if missing
         run: |
-          mkdir -p mre-core/vendor
-          if (-not (Test-Path "mre-core/vendor/unicorn")) {
+          if (-not (Test-Path "mre-core/vendor/unicorn/CMakeLists.txt")) {
             git clone https://github.com/unicorn-engine/unicorn.git mre-core/vendor/unicorn
           }
 
@@ -25,19 +26,24 @@ jobs:
         with:
           version: 0.15.0
 
-      - name: Build Unicorn Dependency
+      - name: Build Unicorn Engine (Static)
         run: |
           cd mre-core/vendor/unicorn
-          cmake -B build -A x64 -DUNICORN_BUILD_SAMPLES=OFF -DUNICORN_BUILD_TESTS=OFF
-          cmake --build build --config Release
-          New-Item -ItemType Directory -Force -Path "build\lib"
-          Copy-Item -Path "build\Release\*" -Destination "build\" -Recurse -Force -ErrorAction SilentlyContinue
-          Copy-Item -Path "build\Release\*" -Destination "build\lib\" -Recurse -Force -ErrorAction SilentlyContinue
+          cmake -B build -G "NMake Makefiles" -DBUILD_SHARED_LIBS=OFF -DUNICORN_BUILD_SAMPLES=OFF -DUNICORN_BUILD_TESTS=OFF
+          cmake --build build
+
+      - name: Flatten Library Paths for Zig
+        run: |
+          cd mre-core/vendor/unicorn
+          New-Item -ItemType Directory -Force -Path "build"
+          Get-ChildItem -Path "build" -Recurse -Filter "*.lib" | Copy-Item -Destination "build\" -Force
+          Get-ChildItem -Path "build" -Recurse -Filter "*.a" | Copy-Item -Destination "build\" -Force
 
       - name: Build Executable with Zig
         run: |
           cd mre-core
-          zig build -Doptimize=ReleaseFast
+          $unicorndir = (Resolve-Path "vendor/unicorn/build").Path
+          zig build -Doptimize=ReleaseFast -p zig-out --search-prefix "$unicorndir"
 
       - name: Upload Windows Binary Artifact
         uses: actions/upload-artifact@v4
