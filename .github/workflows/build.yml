@@ -13,6 +13,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup MSYS2 MinGW64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          path-type: inherit
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-pkg-config
+
       - name: Clone Unicorn Submodule
         run: |
           mkdir -p mre-core/vendor
@@ -25,11 +37,14 @@ jobs:
         with:
           version: 0.15.0
 
-      - name: Build Unicorn Engine (Static with Ninja)
+      - name: Build Unicorn (MinGW Static)
+        shell: msys2 {0}
         run: |
           cd mre-core/vendor/unicorn
           cmake -B build -G "Ninja" -DBUILD_SHARED_LIBS=OFF -DUNICORN_BUILD_SAMPLES=OFF -DUNICORN_BUILD_TESTS=OFF
           cmake --build build
+          cp build/libunicorn.a build/unicorn.a 2>/dev/null || true
+          cp build/libunicorn.a build/libunicorn.lib 2>/dev/null || true
 
       - name: Build Executable with Zig
         run: |
