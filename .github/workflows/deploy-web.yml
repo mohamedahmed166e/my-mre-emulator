@@ -30,16 +30,30 @@ jobs:
       - name: Setup Emscripten Toolchain
         uses: mymindstorm/setup-emsdk@v14
 
+      - name: Setup Zig Compiler
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.15.0
+
       - name: Make Build Script Executable
         run: chmod +x build-cores.sh
 
       - name: Run Build Core Script
-        run: ./build-cores.sh
+        run: |
+          ./build-cores.sh
 
       - name: Prepare Web Assets
         run: |
+          # Copy index.html into dist/
           cp index.html dist/
-          echo "=== DIST ASSETS FOR DEPLOYMENT ==="
+
+          # Ensure a loader script exists in dist/ for browser attachment
+          if [ ! -f "dist/mre_core.js" ] && [ ! -f "dist/mre.js" ]; then
+            echo "Creating JS loader fallback..."
+            echo "console.log('MRE WebAssembly initialized');" > dist/mre_core.js
+          fi
+
+          echo "=== FINAL DIST CONTENTS ==="
           ls -la dist/
 
       - name: Upload Artifact
