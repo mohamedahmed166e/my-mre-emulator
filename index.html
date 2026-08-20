@@ -195,15 +195,25 @@
             }
         };
 
-        // Render loop: Reads WebAssembly framebuffer memory address and draws to HTML5 canvas
+        // Render loop with safe WebAssembly Memory heap resolution
         function startCanvasRenderLoop() {
             function render() {
                 if (typeof Module._get_framebuffer === 'function') {
                     const pointer = Module._get_framebuffer();
                     if (pointer) {
-                        const buffer = new Uint8ClampedArray(Module.HEAPU8.buffer, pointer, 240 * 320 * 4);
-                        imgData.data.set(buffer);
-                        ctx.putImageData(imgData, 0, 0);
+                        // Dynamically find active WASM memory buffer across different Emscripten versions
+                        let rawBuffer = null;
+                        if (Module.HEAPU8 && Module.HEAPU8.buffer) {
+                            rawBuffer = Module.HEAPU8.buffer;
+                        } else if (Module.wasmMemory && Module.wasmMemory.buffer) {
+                            rawBuffer = Module.wasmMemory.buffer;
+                        }
+
+                        if (rawBuffer) {
+                            const pixelView = new Uint8ClampedArray(rawBuffer, pointer, 240 * 320 * 4);
+                            imgData.data.set(pixelView);
+                            ctx.putImageData(imgData, 0, 0);
+                        }
                     }
                 }
                 requestAnimationFrame(render);
