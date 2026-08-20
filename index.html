@@ -53,7 +53,11 @@
             })(),
             onRuntimeInitialized: function() {
                 console.log("Emscripten Runtime & FS Ready.");
-                console.log("Exported functions available:", Object.keys(Module).filter(k => k.startsWith('_')));
+                
+                // Inspect all available exported C functions in console
+                var exportedFuncs = Object.keys(Module).filter(k => k.startsWith('_'));
+                console.log("Exported C functions available:", exportedFuncs);
+
                 var statusEl = document.getElementById('status');
                 if (statusEl) statusEl.innerText = "Wasm Engine Ready. Select a .vxp file to start.";
             }
@@ -74,16 +78,25 @@
                     try {
                         FS.writeFile('/app.vxp', uint8Array);
                         console.log("File written to virtual FS at /app.vxp");
-                        if (statusEl) statusEl.innerText = "Mounted " + file.name + " to virtual FS.";
 
+                        // Attempt execution through common entry function patterns or main
                         if (typeof Module._main === 'function') {
+                            console.log("Executing via _main...");
                             Module._main(1, ['/app.vxp']);
+                        } else if (typeof Module._vm_entry === 'function') {
+                            console.log("Executing via _vm_entry...");
+                            Module._vm_entry();
+                        } else if (typeof Module._mre_run === 'function') {
+                            console.log("Executing via _mre_run...");
+                            Module._mre_run();
                         } else {
-                            console.log("Core loaded cleanly without auto-main crash.");
+                            console.log("File mounted successfully. Check browser console for available exported symbol names.");
                         }
+
+                        if (statusEl) statusEl.innerText = "Running " + file.name;
                     } catch (err) {
                         console.error("Execution Error:", err);
-                        if (statusEl) statusEl.innerText = "Error: " + err.message;
+                        if (statusEl) statusEl.innerText = "Execution Error: " + err.message;
                     }
                 } else {
                     if (statusEl) statusEl.innerText = "Error: Virtual FS not attached.";
