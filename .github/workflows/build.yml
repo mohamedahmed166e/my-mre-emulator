@@ -18,7 +18,7 @@ jobs:
       - name: Setup Zig Compiler
         uses: mlugg/setup-zig@v1
         with:
-          version: 0.11.0
+          version: 0.12.0
 
       - name: Build Executable
         run: |
