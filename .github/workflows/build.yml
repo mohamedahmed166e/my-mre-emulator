@@ -13,7 +13,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup MSYS2 MinGW64
+      - name: Setup MSYS2 Toolchain
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
@@ -23,34 +23,39 @@ jobs:
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-pkg-config
-
-      - name: Clone Unicorn Submodule
-        run: |
-          mkdir -p mre-core/vendor
-          if (-not (Test-Path "mre-core/vendor/unicorn/CMakeLists.txt")) {
-            git clone https://github.com/unicorn-engine/unicorn.git mre-core/vendor/unicorn
-          }
+            mingw-w64-x86_64-sdl3
 
       - name: Setup Zig Compiler
         uses: mlugg/setup-zig@v2
         with:
           version: 0.15.0
 
-      - name: Build Unicorn (MinGW Static)
+      - name: Clone Unicorn Submodule
+        run: |
+          mkdir -p vendor
+          if (-not (Test-Path "vendor/unicorn/CMakeLists.txt")) {
+            git clone https://github.com/unicorn-engine/unicorn.git vendor/unicorn
+          }
+
+      - name: Build Unicorn Engine (MSYS2 Static)
         shell: msys2 {0}
         run: |
-          cd mre-core/vendor/unicorn
+          cd vendor/unicorn
           cmake -B build -G "Ninja" -DBUILD_SHARED_LIBS=OFF -DUNICORN_BUILD_SAMPLES=OFF -DUNICORN_BUILD_TESTS=OFF
           cmake --build build
-          cp build/libunicorn.a build/unicorn.a 2>/dev/null || true
+          
+          # Create matching library names so Zig's linker finds libunicorn regardless of extension
+          cp build/libunicorn.a build/unicorn.lib 2>/dev/null || true
           cp build/libunicorn.a build/libunicorn.lib 2>/dev/null || true
 
       - name: Build Executable with Zig
+        shell: msys2 {0}
         run: |
           cd mre-core
-          $unicorndir = (Resolve-Path "vendor/unicorn/build").Path
-          zig build -Doptimize=ReleaseFast -p zig-out --search-prefix "$unicorndir"
+          # Pass explicit library search paths directly to Zig via flags
+          zig build -Doptimize=ReleaseFast \
+            --search-prefix "/mingw64" \
+            -fsearch-prefix "$(pwd)/../vendor/unicorn/build"
 
       - name: Upload Windows Binary Artifact
         uses: actions/upload-artifact@v4
