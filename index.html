@@ -9,7 +9,7 @@
         body { 
             background-color: #0d0d0d; 
             color: #ffffff; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             text-align: center; 
             margin: 0;
             padding: 15px;
@@ -28,10 +28,8 @@
             border: 1px solid #444;
             padding: 8px 12px;
             border-radius: 6px;
-            max-width: 90vw;
         }
 
-        /* Fully Responsive Phone Chassis */
         .phone-wrapper {
             display: flex;
             justify-content: center;
@@ -64,13 +62,11 @@
             border-radius: 6px;
             display: block;
             margin: 0 auto;
-            width: 100%;
-            max-width: 240px;
-            aspect-ratio: 240 / 320;
-            height: auto;
+            width: 240px;
+            height: 320px;
+            image-rendering: pixelated;
         }
 
-        /* Responsive Keypad */
         .keypad {
             margin-top: 12px;
             display: grid;
@@ -103,7 +99,6 @@
         .btn-call { background: #1e5622; }
         .btn-end { background: #7a1c1c; }
 
-        /* Responsive Console Output */
         .console-container {
             width: 100%;
             max-width: 500px;
@@ -116,17 +111,12 @@
             color: #00ff66;
             font-family: monospace;
             font-size: 11px;
-            height: 100px;
+            height: 110px;
             padding: 8px;
             border: 1px solid #333;
             border-radius: 6px;
             overflow-y: auto;
             white-space: pre-wrap;
-        }
-
-        @media (max-width: 400px) {
-            body { padding: 8px; }
-            .btn { padding: 8px 0; font-size: 12px; }
         }
     </style>
 </head>
@@ -145,33 +135,33 @@
             <div id="status" style="color:#aaa; font-size:11px; margin: 6px 0;">Engine Loading...</div>
 
             <div class="keypad">
-                <button class="btn btn-action" onmousedown="sendKey(1, 1)" onmouseup="sendKey(1, 0)" ontouchstart="sendKey(1, 1)" ontouchend="sendKey(1, 0)">LSK</button>
-                <button class="btn btn-action" onmousedown="sendKey(14, 1)" onmouseup="sendKey(14, 0)" ontouchstart="sendKey(14, 1)" ontouchend="sendKey(14, 0)">UP</button>
-                <button class="btn btn-action" onmousedown="sendKey(2, 1)" onmouseup="sendKey(2, 0)" ontouchstart="sendKey(2, 1)" ontouchend="sendKey(2, 0)">RSK</button>
+                <button class="btn btn-action" onmousedown="sendKey(1, 1)" onmouseup="sendKey(1, 0)">LSK</button>
+                <button class="btn btn-action" onmousedown="sendKey(14, 1)" onmouseup="sendKey(14, 0)">UP</button>
+                <button class="btn btn-action" onmousedown="sendKey(2, 1)" onmouseup="sendKey(2, 0)">RSK</button>
 
-                <button class="btn btn-action" onmousedown="sendKey(16, 1)" onmouseup="sendKey(16, 0)" ontouchstart="sendKey(16, 1)" ontouchend="sendKey(16, 0)">LEFT</button>
-                <button class="btn btn-action" onmousedown="sendKey(13, 1)" onmouseup="sendKey(13, 0)" ontouchstart="sendKey(13, 1)" ontouchend="sendKey(13, 0)">OK</button>
-                <button class="btn btn-action" onmousedown="sendKey(17, 1)" onmouseup="sendKey(17, 0)" ontouchstart="sendKey(17, 1)" ontouchend="sendKey(17, 0)">RIGHT</button>
+                <button class="btn btn-action" onmousedown="sendKey(16, 1)" onmouseup="sendKey(16, 0)">LEFT</button>
+                <button class="btn btn-action" onmousedown="sendKey(13, 1)" onmouseup="sendKey(13, 0)">OK</button>
+                <button class="btn btn-action" onmousedown="sendKey(17, 1)" onmouseup="sendKey(17, 0)">RIGHT</button>
 
-                <button class="btn btn-call" onmousedown="sendKey(3, 1)" onmouseup="sendKey(3, 0)" ontouchstart="sendKey(3, 1)" ontouchend="sendKey(3, 0)">CALL</button>
-                <button class="btn btn-action" onmousedown="sendKey(15, 1)" onmouseup="sendKey(15, 0)" ontouchstart="sendKey(15, 1)" ontouchend="sendKey(15, 0)">DOWN</button>
-                <button class="btn btn-end" onmousedown="sendKey(4, 1)" onmouseup="sendKey(4, 0)" ontouchstart="sendKey(4, 1)" ontouchend="sendKey(4, 0)">END</button>
+                <button class="btn btn-call" onmousedown="sendKey(3, 1)" onmouseup="sendKey(3, 0)">CALL</button>
+                <button class="btn btn-action" onmousedown="sendKey(15, 1)" onmouseup="sendKey(15, 0)">DOWN</button>
+                <button class="btn btn-end" onmousedown="sendKey(4, 1)" onmouseup="sendKey(4, 0)">END</button>
 
-                <button class="btn" onmousedown="sendKey(48, 1)" onmouseup="sendKey(48, 0)" ontouchstart="sendKey(48, 1)" ontouchend="sendKey(48, 0)">1</button>
-                <button class="btn" onmousedown="sendKey(49, 1)" onmouseup="sendKey(49, 0)" ontouchstart="sendKey(49, 1)" ontouchend="sendKey(49, 0)">2</button>
-                <button class="btn" onmousedown="sendKey(50, 1)" onmouseup="sendKey(50, 0)" ontouchstart="sendKey(50, 1)" ontouchend="sendKey(50, 0)">3</button>
+                <button class="btn" onmousedown="sendKey(48, 1)" onmouseup="sendKey(48, 0)">1</button>
+                <button class="btn" onmousedown="sendKey(49, 1)" onmouseup="sendKey(49, 0)">2</button>
+                <button class="btn" onmousedown="sendKey(50, 1)" onmouseup="sendKey(50, 0)">3</button>
 
-                <button class="btn" onmousedown="sendKey(51, 1)" onmouseup="sendKey(51, 0)" ontouchstart="sendKey(51, 1)" ontouchend="sendKey(51, 0)">4</button>
-                <button class="btn" onmousedown="sendKey(52, 1)" onmouseup="sendKey(52, 0)" ontouchstart="sendKey(52, 1)" ontouchend="sendKey(52, 0)">5</button>
-                <button class="btn" onmousedown="sendKey(53, 1)" onmouseup="sendKey(53, 0)" ontouchstart="sendKey(53, 1)" ontouchend="sendKey(53, 0)">6</button>
+                <button class="btn" onmousedown="sendKey(51, 1)" onmouseup="sendKey(51, 0)">4</button>
+                <button class="btn" onmousedown="sendKey(52, 1)" onmouseup="sendKey(52, 0)">5</button>
+                <button class="btn" onmousedown="sendKey(53, 1)" onmouseup="sendKey(53, 0)">6</button>
 
-                <button class="btn" onmousedown="sendKey(54, 1)" onmouseup="sendKey(54, 0)" ontouchstart="sendKey(54, 1)" ontouchend="sendKey(54, 0)">7</button>
-                <button class="btn" onmousedown="sendKey(55, 1)" onmouseup="sendKey(55, 0)" ontouchstart="sendKey(55, 1)" ontouchend="sendKey(55, 0)">8</button>
-                <button class="btn" onmousedown="sendKey(56, 1)" onmouseup="sendKey(56, 0)" ontouchstart="sendKey(56, 1)" ontouchend="sendKey(56, 0)">9</button>
+                <button class="btn" onmousedown="sendKey(54, 1)" onmouseup="sendKey(54, 0)">7</button>
+                <button class="btn" onmousedown="sendKey(55, 1)" onmouseup="sendKey(55, 0)">8</button>
+                <button class="btn" onmousedown="sendKey(56, 1)" onmouseup="sendKey(56, 0)">9</button>
 
-                <button class="btn" onmousedown="sendKey(42, 1)" onmouseup="sendKey(42, 0)" ontouchstart="sendKey(42, 1)" ontouchend="sendKey(42, 0)">*</button>
-                <button class="btn" onmousedown="sendKey(47, 1)" onmouseup="sendKey(47, 0)" ontouchstart="sendKey(47, 1)" ontouchend="sendKey(47, 0)">0</button>
-                <button class="btn" onmousedown="sendKey(35, 1)" onmouseup="sendKey(35, 0)" ontouchstart="sendKey(35, 1)" ontouchend="sendKey(35, 0)">#</button>
+                <button class="btn" onmousedown="sendKey(42, 1)" onmouseup="sendKey(42, 0)">*</button>
+                <button class="btn" onmousedown="sendKey(47, 1)" onmouseup="sendKey(47, 0)">0</button>
+                <button class="btn" onmousedown="sendKey(35, 1)" onmouseup="sendKey(35, 0)">#</button>
             </div>
         </div>
     </div>
@@ -182,6 +172,10 @@
     </div>
 
     <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const imgData = ctx.createImageData(240, 320);
+
         function logToWebConsole(text) {
             var el = document.getElementById('consoleLog');
             if (el) {
@@ -191,14 +185,31 @@
         }
 
         var Module = {
-            canvas: (function() { return document.getElementById('canvas'); })(),
+            canvas: canvas,
             print: function(text) { console.log(text); logToWebConsole("[LOG] " + text); },
             printErr: function(text) { console.error(text); logToWebConsole("[ERR] " + text); },
             onRuntimeInitialized: function() {
-                document.getElementById('status').innerText = "Ready. Select a .vxp file.";
+                document.getElementById('status').innerText = "Ready. Load a .vxp file.";
                 logToWebConsole("WebAssembly core loaded.");
+                startCanvasRenderLoop();
             }
         };
+
+        // Render loop: Reads WebAssembly framebuffer memory address and draws to HTML5 canvas
+        function startCanvasRenderLoop() {
+            function render() {
+                if (typeof Module._get_framebuffer === 'function') {
+                    const pointer = Module._get_framebuffer();
+                    if (pointer) {
+                        const buffer = new Uint8ClampedArray(Module.HEAPU8.buffer, pointer, 240 * 320 * 4);
+                        imgData.data.set(buffer);
+                        ctx.putImageData(imgData, 0, 0);
+                    }
+                }
+                requestAnimationFrame(render);
+            }
+            requestAnimationFrame(render);
+        }
 
         function sendKey(code, isPressed) {
             if (typeof Module._send_mre_key === 'function') {
@@ -217,7 +228,7 @@
                 if (typeof FS !== 'undefined') {
                     const filePath = '/app.vxp';
                     FS.writeFile(filePath, uint8Array);
-                    logToWebConsole("Mounted " + file.name + " to virtual FS.");
+                    logToWebConsole("Mounted " + file.name + " (" + uint8Array.length + " bytes)");
 
                     if (typeof Module._run_vxp_app === 'function') {
                         Module.ccall('run_vxp_app', 'number', ['string'], [filePath]);
@@ -225,22 +236,6 @@
                 }
             };
             reader.readAsArrayBuffer(file);
-        });
-
-        window.addEventListener('keydown', function(e) {
-            if (e.key === "ArrowUp") sendKey(14, 1);
-            if (e.key === "ArrowDown") sendKey(15, 1);
-            if (e.key === "ArrowLeft") sendKey(16, 1);
-            if (e.key === "ArrowRight") sendKey(17, 1);
-            if (e.key === "Enter") sendKey(13, 1);
-        });
-
-        window.addEventListener('keyup', function(e) {
-            if (e.key === "ArrowUp") sendKey(14, 0);
-            if (e.key === "ArrowDown") sendKey(15, 0);
-            if (e.key === "ArrowLeft") sendKey(16, 0);
-            if (e.key === "ArrowRight") sendKey(17, 0);
-            if (e.key === "Enter") sendKey(13, 0);
         });
     </script>
 
