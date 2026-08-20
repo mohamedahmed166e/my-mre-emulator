@@ -20,23 +20,16 @@ jobs:
         with:
           version: 0.15.0
 
-      - name: Setup MSYS2 Dependencies
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          path-type: inherit
-          install: >-
-            mingw-w64-x86_64-unicorn
-            mingw-w64-x86_64-sdl3
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-pkg-config
+      - name: Build Unicorn Dependency
+        run: |
+          cd mre-core/vendor/unicorn
+          cmake -B build -A x64 -DUNICORN_BUILD_SAMPLES=OFF -DUNICORN_BUILD_TESTS=OFF
+          cmake --build build --config Release
 
-      - name: Build Executable
-        shell: msys2 {0}
+      - name: Build Executable with Zig
         run: |
           cd mre-core
-          zig build -Doptimize=ReleaseFast --search-prefix /mingw64
+          zig build -Doptimize=ReleaseFast
 
       - name: Upload Windows Binary Artifact
         uses: actions/upload-artifact@v4
