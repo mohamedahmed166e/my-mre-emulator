@@ -4,6 +4,8 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DIST="$HERE/dist"
 
+# Ensure clean dist directory
+rm -rf "$DIST"
 mkdir -p "$DIST"
 
 echo "=== Compiling MRE Core for WebAssembly ==="
@@ -26,7 +28,7 @@ while IFS= read -r dir; do
     fi
 done < <(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u)
 
-# Compile using Emscripten with loose symbol exports for libretro/custom cores
+# Compile to dist/mre_core.js and dist/mre_core.wasm
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
@@ -38,5 +40,5 @@ emcc $C_FILES \
   -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall"]' \
   -o "$DIST/mre_core.js"
 
-echo "=== BUILD SUCCESSFUL ==="
+echo "=== VERIFYING GENERATED DIST ASSETS ==="
 ls -la "$DIST"
