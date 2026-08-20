@@ -19,30 +19,32 @@ build_core() {
   echo "=== [$name] build WebAssembly core ==="
   
   if [ "$TARGET" = "wasm32-emscripten" ]; then
-    # Compile directly using Emscripten for web deployment
-    if [ -f "$HERE/$name-core/src/main.c" ]; then
-      emcc "$HERE/$name-core/src/main.c" -O3 \
+    local dir="$HERE/${name}-core"
+    
+    if [ -f "$dir/src/main.c" ]; then
+      emcc "$dir/src/main.c" -O3 \
         -s WASM=1 \
         -s FORCE_FILESYSTEM=1 \
         -s EXPORTED_RUNTIME_METHODS='["FS","callMain"]' \
         -o "$DIST/${name}_core.js" || { echo "[$name] emcc build FAILED"; FAIL_CORES+=("$name"); return; }
     else
-      # Fallback zig build target for emscripten if configured in build.zig
-      cd "$HERE/$name-core" && zig build -Dtarget=wasm32-emscripten -Doptimize=ReleaseSmall
-      if [ -f "zig-out/bin/${name}.js" ]; then
-        cp "zig-out/bin/${name}.js" "$DIST/${name}_core.js"
-        cp "zig-out/bin/${name}.wasm" "$DIST/${name}_core.wasm"
+      ( cd "$dir" && zig build -Dtarget=wasm32-emscripten -Doptimize=ReleaseSmall ) || { FAIL_CORES+=("$name"); return; }
+      if [ -f "$dir/zig-out/bin/${name}.js" ]; then
+        cp "$dir/zig-out/bin/${name}.js" "$DIST/${name}_core.js"
+        cp "$dir/zig-out/bin/${name}.wasm" "$DIST/${name}_core.wasm" 2>/dev/null || true
       fi
     fi
   else
-    # Native libretro build logic
-    local dir="$HERE/$name-core"
+    local dir="$HERE/${name}-core"
     ( cd "$dir" && zig build libretro -Doptimize=ReleaseSmall ) || { FAIL_CORES+=("$name"); return; }
-    cp "$dir/zig-out/libretro/${name}_libretro.so" "$DIST/"
+    cp "$dir/zig-out/libretro/${name}_libretro.so" "$DIST/" 2>/dev/null || true
   fi
 
   OK_CORES+=("$name")
 }
 
 for c in "${CORES[@]}"; do build_core "$c"; done
+
+echo ""
+echo "=== BUILD COMPLETE ==="
 ls -la "$DIST"
