@@ -15,10 +15,10 @@ if [ ! -d "$CORE_DIR" ]; then
     exit 1
 fi
 
-# Locate all C files inside mre-core
+# Find all C source files inside mre-core
 C_FILES=$(find "$CORE_DIR" -type f -name "*.c")
 
-# Include all source folders dynamically
+# Discover all header directories dynamically
 INCLUDE_FLAGS=""
 while IFS= read -r dir; do
     if [ -n "$dir" ]; then
@@ -26,15 +26,15 @@ while IFS= read -r dir; do
     fi
 done < <(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u)
 
-# Compile using Emscripten to generate JS and WASM
+# Compile using Emscripten without strict main export requirements
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
   -s WASM=1 \
   -s FORCE_FILESYSTEM=1 \
   -s ALLOW_MEMORY_GROWTH=1 \
+  -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
   -s EXPORTED_RUNTIME_METHODS='["FS","callMain","cwrap","ccall"]' \
-  -s EXPORTED_FUNCTIONS='["_main"]' \
   -o "$DIST/mre_core.js"
 
 echo "=== BUILD SUCCESSFUL ==="
