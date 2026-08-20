@@ -5,25 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MRE .vxp Web Emulator</title>
     <style>
-        body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 20px;
-        }
-        #canvas {
-            border: 2px solid #333;
-            background: #000;
-            display: block;
-            margin: 20px auto;
+        body { 
+            background-color: #121212; 
+            color: #ffffff; 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            margin: 0;
+            padding: 40px 20px;
         }
         .controls {
-            margin-bottom: 20px;
+            margin: 20px 0;
+        }
+        input[type="file"] {
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        canvas { 
+            background: #000000; 
+            border: 2px solid #333333; 
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            display: block;
+            margin: 0 auto;
         }
         #status {
-            margin-top: 10px;
             color: #aaa;
+            font-size: 14px;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -41,24 +53,27 @@
     <div id="status">Loading Wasm Engine...</div>
 
     <script>
-        // Define Module prior to script injection
+        // Define global Module configuration before loading Wasm script
         var Module = {
             canvas: (function() {
                 return document.getElementById('canvas');
             })(),
             onRuntimeInitialized: function() {
                 console.log("Emscripten Runtime & FS Ready.");
-                console.log("Exported functions:", Object.keys(Module).filter(k => k.startsWith('_')));
-                document.getElementById('status').innerText = "Wasm Engine Ready. Select a .vxp file to start.";
+                var statusEl = document.getElementById('status');
+                if (statusEl) {
+                    statusEl.innerText = "Wasm Engine Ready. Select a .vxp file to start.";
+                }
             }
         };
 
-        // File loading logic
+        // Attach file input handler
         document.getElementById('vxpInput').addEventListener('change', function(e) {
             var file = e.target.files[0];
             if (!file) return;
 
-            document.getElementById('status').innerText = "Loading " + file.name + "...";
+            var statusEl = document.getElementById('status');
+            if (statusEl) statusEl.innerText = "Loading " + file.name + "...";
 
             var reader = new FileReader();
             reader.onload = function(evt) {
@@ -68,9 +83,9 @@
                     try {
                         FS.writeFile('/app.vxp', uint8Array);
                         console.log("File written to virtual FS at /app.vxp");
-                        document.getElementById('status').innerText = "Running " + file.name;
+                        if (statusEl) statusEl.innerText = "Running " + file.name;
 
-                        // Call entry point based on exported functions
+                        // Try executing entry points
                         if (typeof Module._main === 'function') {
                             Module._main(1, ['/app.vxp']);
                         } else if (typeof callMain === 'function') {
@@ -78,24 +93,16 @@
                         }
                     } catch (err) {
                         console.error("Execution Error:", err);
-                        document.getElementById('status').innerText = "Error: " + err.message;
+                        if (statusEl) statusEl.innerText = "Error: " + err.message;
                     }
                 } else {
-                    document.getElementById('status').innerText = "Error: FS Virtual File System not attached.";
+                    if (statusEl) statusEl.innerText = "Error: Virtual FS not attached.";
                 }
             };
             reader.readAsArrayBuffer(file);
         });
-
-        // Safely append script once DOM is parsed
-        window.addEventListener('DOMContentLoaded', function() {
-            var coreScript = document.createElement('script');
-            coreScript.src = "mre_core.js";
-            coreScript.onerror = function() {
-                document.getElementById('status').innerText = "Error: Failed to load mre_core.js";
-            };
-            document.body.appendChild(coreScript);
-        });
     </script>
+
+    <script src="mre_core.js"></script>
 </body>
 </html>
