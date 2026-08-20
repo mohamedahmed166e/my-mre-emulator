@@ -24,7 +24,7 @@ while IFS= read -r dir; do
     fi
 done < <(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u)
 
-# Compile using Emscripten without forcing _main
+# Compile using Emscripten without forcing specific symbol exports
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
@@ -33,8 +33,7 @@ emcc $C_FILES \
   -s ALLOW_MEMORY_GROWTH=1 \
   -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
   -s WARN_ON_UNDEFINED_SYMBOLS=0 \
-  -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall"]' \
-  -s EXPORTED_FUNCTIONS='["_retro_init","_retro_run","_retro_load_game"]' \
+  -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall","callMain"]' \
   -o "$DIST/mre_core.js"
 
 echo "=== BUILD SUCCESSFUL ==="
