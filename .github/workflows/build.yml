@@ -31,11 +31,13 @@ jobs:
           cd mre-core/vendor/unicorn
           cmake -B build -A x64 -DUNICORN_BUILD_SAMPLES=OFF -DUNICORN_BUILD_TESTS=OFF
           cmake --build build --config Release
+          Copy-Item -Path "build\Release\*" -Destination "build\" -Recurse -Force -ErrorAction SilentlyContinue
 
       - name: Build Executable with Zig
         run: |
           cd mre-core
-          zig build -Doptimize=ReleaseFast
+          $unicorndir = (Resolve-Path "vendor/unicorn/build").Path
+          zig build -Doptimize=ReleaseFast --search-prefix "$unicorndir"
 
       - name: Upload Windows Binary Artifact
         uses: actions/upload-artifact@v4
