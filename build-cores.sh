@@ -25,15 +25,17 @@ while IFS= read -r dir; do
     fi
 done < <(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u)
 
+# -s INVOKE_RUN=0 prevents Emscripten from auto-calling non-existent callMain/main on load
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
   -s WASM=1 \
   -s FORCE_FILESYSTEM=1 \
   -s ALLOW_MEMORY_GROWTH=1 \
+  -s INVOKE_RUN=0 \
   -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
   -s WARN_ON_UNDEFINED_SYMBOLS=0 \
-  -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall","callMain"]' \
+  -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall"]' \
   -o "$DIST/mre_core.js"
 
 echo "=== BUILD COMPLETE ==="
