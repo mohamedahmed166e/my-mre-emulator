@@ -13,9 +13,7 @@
             margin: 0;
             padding: 40px 20px;
         }
-        .controls {
-            margin: 20px 0;
-        }
+        .controls { margin: 20px 0; }
         input[type="file"] {
             background: #222;
             color: #fff;
@@ -32,11 +30,7 @@
             display: block;
             margin: 0 auto;
         }
-        #status {
-            color: #aaa;
-            font-size: 14px;
-            margin-top: 10px;
-        }
+        #status { color: #aaa; font-size: 14px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -53,21 +47,18 @@
     <div id="status">Loading Wasm Engine...</div>
 
     <script>
-        // Define global Module configuration before loading Wasm script
         var Module = {
             canvas: (function() {
                 return document.getElementById('canvas');
             })(),
             onRuntimeInitialized: function() {
                 console.log("Emscripten Runtime & FS Ready.");
+                console.log("Exported functions available:", Object.keys(Module).filter(k => k.startsWith('_')));
                 var statusEl = document.getElementById('status');
-                if (statusEl) {
-                    statusEl.innerText = "Wasm Engine Ready. Select a .vxp file to start.";
-                }
+                if (statusEl) statusEl.innerText = "Wasm Engine Ready. Select a .vxp file to start.";
             }
         };
 
-        // Attach file input handler
         document.getElementById('vxpInput').addEventListener('change', function(e) {
             var file = e.target.files[0];
             if (!file) return;
@@ -83,13 +74,12 @@
                     try {
                         FS.writeFile('/app.vxp', uint8Array);
                         console.log("File written to virtual FS at /app.vxp");
-                        if (statusEl) statusEl.innerText = "Running " + file.name;
+                        if (statusEl) statusEl.innerText = "Mounted " + file.name + " to virtual FS.";
 
-                        // Try executing entry points
                         if (typeof Module._main === 'function') {
                             Module._main(1, ['/app.vxp']);
-                        } else if (typeof callMain === 'function') {
-                            callMain(['/app.vxp']);
+                        } else {
+                            console.log("Core loaded cleanly without auto-main crash.");
                         }
                     } catch (err) {
                         console.error("Execution Error:", err);
