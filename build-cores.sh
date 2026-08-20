@@ -2,10 +2,6 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-DIST="$HERE/dist"
-
-rm -rf "$DIST"
-mkdir -p "$DIST"
 
 echo "=== Compiling MRE Core for WebAssembly ==="
 
@@ -25,7 +21,7 @@ while IFS= read -r dir; do
     fi
 done < <(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u)
 
-# Compile while forcing symbol visibility across all C sources
+# Compiles binaries directly to root so index.html can load mre_core.js without path mismatches
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
@@ -37,7 +33,6 @@ emcc $C_FILES \
   -s WARN_ON_UNDEFINED_SYMBOLS=0 \
   -s EXPORT_ALL=1 \
   -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall","getValue","setValue","UTF8ToString"]' \
-  -o "$DIST/mre_core.js"
+  -o "$HERE/mre_core.js"
 
 echo "=== BUILD COMPLETE ==="
-ls -la "$DIST"
