@@ -53,8 +53,6 @@
             })(),
             onRuntimeInitialized: function() {
                 console.log("Emscripten Runtime & FS Ready.");
-                
-                // Print exposed functions in DevTools Console
                 var exportedFuncs = Object.keys(Module).filter(k => k.startsWith('_'));
                 console.log("Exported C functions available:", exportedFuncs);
 
@@ -80,25 +78,14 @@
                         FS.writeFile(filePath, uint8Array);
                         console.log("File written to virtual FS at " + filePath);
 
-                        // Call exported run_vxp_app function
                         if (typeof Module._run_vxp_app === 'function') {
-                            console.log("Executing via Module._run_vxp_app...");
+                            console.log("Executing via Module.ccall...");
                             
-                            // Allocate memory for path string and pass pointer
-                            var lengthBytes = lengthBytesUTF8(filePath) + 1;
-                            var stringPtr = Module._malloc(lengthBytes);
-                            stringToUTF8(filePath, stringPtr, lengthBytes);
-                            
-                            // Invoke C engine function
-                            Module._run_vxp_app(stringPtr);
-                            
-                            // Free memory pointer
-                            Module._free(stringPtr);
+                            // Safe string execution without calling Module._malloc
+                            Module.ccall('run_vxp_app', 'number', ['string'], [filePath]);
                         } else if (typeof Module._main === 'function') {
                             console.log("Fallback executing via _main...");
                             Module._main();
-                        } else {
-                            console.warn("No explicit entry point function found on Module.");
                         }
 
                         if (statusEl) statusEl.innerText = "Running " + file.name;
