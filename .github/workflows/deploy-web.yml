@@ -47,6 +47,7 @@ jobs:
 
       - name: Prepare Web Assets for Deployment
         run: |
+          mkdir -p dist
           cp index.html dist/
           echo "=== VERIFYING DIST CONTENTS ==="
           ls -la dist/
