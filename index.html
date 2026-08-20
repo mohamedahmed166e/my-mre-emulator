@@ -54,7 +54,7 @@
             onRuntimeInitialized: function() {
                 console.log("Emscripten Runtime & FS Ready.");
                 
-                // Inspect all available exported C functions in console
+                // Print exposed functions in DevTools Console
                 var exportedFuncs = Object.keys(Module).filter(k => k.startsWith('_'));
                 console.log("Exported C functions available:", exportedFuncs);
 
@@ -76,21 +76,29 @@
 
                 if (typeof FS !== 'undefined') {
                     try {
-                        FS.writeFile('/app.vxp', uint8Array);
-                        console.log("File written to virtual FS at /app.vxp");
+                        const filePath = '/app.vxp';
+                        FS.writeFile(filePath, uint8Array);
+                        console.log("File written to virtual FS at " + filePath);
 
-                        // Attempt execution through common entry function patterns or main
-                        if (typeof Module._main === 'function') {
-                            console.log("Executing via _main...");
-                            Module._main(1, ['/app.vxp']);
-                        } else if (typeof Module._vm_entry === 'function') {
-                            console.log("Executing via _vm_entry...");
-                            Module._vm_entry();
-                        } else if (typeof Module._mre_run === 'function') {
-                            console.log("Executing via _mre_run...");
-                            Module._mre_run();
+                        // Call exported run_vxp_app function
+                        if (typeof Module._run_vxp_app === 'function') {
+                            console.log("Executing via Module._run_vxp_app...");
+                            
+                            // Allocate memory for path string and pass pointer
+                            var lengthBytes = lengthBytesUTF8(filePath) + 1;
+                            var stringPtr = Module._malloc(lengthBytes);
+                            stringToUTF8(filePath, stringPtr, lengthBytes);
+                            
+                            // Invoke C engine function
+                            Module._run_vxp_app(stringPtr);
+                            
+                            // Free memory pointer
+                            Module._free(stringPtr);
+                        } else if (typeof Module._main === 'function') {
+                            console.log("Fallback executing via _main...");
+                            Module._main();
                         } else {
-                            console.log("File mounted successfully. Check browser console for available exported symbol names.");
+                            console.warn("No explicit entry point function found on Module.");
                         }
 
                         if (statusEl) statusEl.innerText = "Running " + file.name;
