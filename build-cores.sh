@@ -18,16 +18,19 @@ fi
 # Find all C source files
 C_FILES=$(find "$CORE_DIR" -type f -name "*.c")
 
-# Automatically discover and add all directories containing header files (.h)
+# Scan the entire workspace for directories containing header files (.h / .hpp)
 INCLUDE_FLAGS=""
-for dir in $(find "$CORE_DIR" -type f -name "*.h" -exec dirname {} \; | sort -u); do
+for dir in $(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u); do
     INCLUDE_FLAGS="$INCLUDE_FLAGS -I$dir"
 done
 
-echo "Include paths configured:"
+echo "Configured Include Paths:"
 echo "$INCLUDE_FLAGS"
 
-# Compile with dynamic include paths, Virtual File System support, and exported methods
+# Fallback explicit inclusions if headers are deeply nested
+INCLUDE_FLAGS="$INCLUDE_FLAGS -I$CORE_DIR -I$CORE_DIR/core -I$CORE_DIR/src -I$CORE_DIR/include"
+
+# Compile via Emscripten
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
