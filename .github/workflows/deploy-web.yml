@@ -49,8 +49,12 @@ jobs:
           # Copy root index.html into dist
           cp index.html dist/
           
-          # Copy all compiled .wasm and .js binary artifacts
-          find . -maxdepth 3 -name "*.wasm" -o -name "*.js" -exec cp {} dist/ \;
+          # Search entire repo for all compiled .js and .wasm files and copy to dist root
+          find . -type f \( -name "*.wasm" -o -name "*.js" \) ! -path "./dist/*" -exec cp {} dist/ \;
+          
+          # List files in dist to debug artifacts in workflow logs
+          echo "=== DIST CONTENTS ==="
+          ls -la dist/
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
