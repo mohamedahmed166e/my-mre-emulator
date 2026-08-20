@@ -5,11 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MRE .vxp Web Emulator</title>
     <style>
-        body { background-color: #121212; color: #ffffff; font-family: Arial, sans-serif; text-align: center; padding: 40px 20px; margin: 0; }
-        .controls { margin: 20px 0; }
-        input[type="file"] { background: #222; color: #fff; border: 1px solid #444; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
-        canvas { background: #000; border: 2px solid #333; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        #status { color: #aaa; font-size: 14px; margin-top: 10px; }
+        body { 
+            background-color: #121212; 
+            color: #ffffff; 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            margin: 0;
+            padding: 40px 20px;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        input[type="file"] {
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        canvas { 
+            background: #000000; 
+            border: 2px solid #333333; 
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        #status {
+            color: #aaa;
+            font-size: 14px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -25,33 +50,54 @@
 
     <script>
         var Module = {
-            canvas: document.getElementById('canvas'),
+            canvas: (function() {
+                return document.getElementById('canvas');
+            })(),
             onRuntimeInitialized: function() {
+                console.log("Emscripten Runtime & FS Ready.");
                 document.getElementById('status').innerText = "Wasm Engine Ready. Select a .vxp file to start.";
             }
         };
-    </script>
-    <script src="mre_core.js" onerror="document.getElementById('status').innerText='Error: Failed to load mre_core.js';"></script>
 
-    <script>
+        // Dynamically try loading mre_core.js or fallback mre.js
+        const coreScript = document.createElement('script');
+        coreScript.src = "mre_core.js";
+        coreScript.onerror = function() {
+            console.warn("mre_core.js not found, trying fallback mre.js");
+            const fallbackScript = document.createElement('script');
+            fallbackScript.src = "mre.js";
+            fallbackScript.onerror = function() {
+                document.getElementById('status').innerText = "Error: Failed to load WebAssembly core script.";
+            };
+            document.body.appendChild(fallbackScript);
+        };
+        document.body.appendChild(coreScript);
+
+        // Upload handler to inject .vxp binaries into virtual FS
         document.getElementById('vxpInput').addEventListener('change', function(e) {
             var file = e.target.files[0];
             if (!file) return;
 
             document.getElementById('status').innerText = "Loading " + file.name + "...";
+
             var reader = new FileReader();
             reader.onload = function(evt) {
                 var uint8Array = new Uint8Array(evt.target.result);
+
                 if (typeof FS !== 'undefined') {
                     try {
                         FS.writeFile('/app.vxp', uint8Array);
                         document.getElementById('status').innerText = "Running " + file.name;
+
                         if (typeof Module._run_vxp === 'function') {
                             Module._run_vxp('/app.vxp');
+                        } else if (typeof Module._main === 'function') {
+                            Module._main();
                         } else if (typeof callMain === 'function') {
                             callMain(['/app.vxp']);
                         }
                     } catch (err) {
+                        console.error("FS Error:", err);
                         document.getElementById('status').innerText = "FS Write Error: " + err.message;
                     }
                 } else {
