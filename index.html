@@ -1,111 +1,65 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MRE .vxp Web Emulator</title>
-    <style>
-        body { 
-            background-color: #121212; 
-            color: #ffffff; 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            margin: 0;
-            padding: 40px 20px;
+<script>
+    var Module = {
+        canvas: (function() {
+            return document.getElementById('canvas');
+        })(),
+        onRuntimeInitialized: function() {
+            console.log("Emscripten Runtime & FS Ready.");
+            console.log("Available Module Keys:", Object.keys(Module).filter(k => k.startsWith('_')));
+            document.getElementById('status').innerText = "Wasm Engine Ready. Select a .vxp file to start.";
         }
-        .controls {
-            margin: 20px 0;
-        }
-        input[type="file"] {
-            background: #222;
-            color: #fff;
-            border: 1px solid #444;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        canvas { 
-            background: #000000; 
-            border: 2px solid #333333; 
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        #status {
-            color: #aaa;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-    </style>
-</head>
-<body>
-    <h1>MRE .vxp Web Emulator</h1>
-    <p>Select a MediaTek MRE <code>.vxp</code> app or game to run in WebAssembly.</p>
+    };
 
-    <div class="controls">
-        <input type="file" id="vxpInput" accept=".vxp">
-    </div>
+    // Load core script dynamically
+    const coreScript = document.createElement('script');
+    coreScript.src = "mre_core.js";
+    coreScript.onerror = function() {
+        document.getElementById('status').innerText = "Error: Failed to load WebAssembly core script.";
+    };
+    document.body.appendChild(coreScript);
 
-    <canvas id="canvas" width="240" height="320" tabindex="1"></canvas>
-    <div id="status">Loading Wasm Engine...</div>
+    // Upload handler
+    document.getElementById('vxpInput').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
 
-    <script>
-        var Module = {
-            canvas: (function() {
-                return document.getElementById('canvas');
-            })(),
-            onRuntimeInitialized: function() {
-                console.log("Emscripten Runtime & FS Ready.");
-                document.getElementById('status').innerText = "Wasm Engine Ready. Select a .vxp file to start.";
+        document.getElementById('status').innerText = "Loading " + file.name + "...";
+
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+            var uint8Array = new Uint8Array(evt.target.result);
+
+            if (typeof FS !== 'undefined') {
+                try {
+                    FS.writeFile('/app.vxp', uint8Array);
+                    console.log("File written to virtual FS at /app.vxp");
+                    document.getElementById('status').innerText = "Running " + file.name;
+
+                    // Try available execution entry points safely
+                    if (typeof Module._run_vxp === 'function') {
+                        Module._run_vxp('/app.vxp');
+                    } else if (typeof Module._retro_run === 'function') {
+                        console.log("Found retro_run function, executing loop...");
+                        if (typeof Module._retro_load_game === 'function') {
+                            // Struct for game info if Libretro core
+                            console.log("Loading via libretro API...");
+                        }
+                    } else if (typeof Module._main === 'function') {
+                        Module._main(1, ['/app.vxp']);
+                    } else if (typeof callMain === 'function') {
+                        callMain(['/app.vxp']);
+                    } else {
+                        console.warn("No direct main or run entry point found on Module.");
+                        document.getElementById('status').innerText = "File loaded to FS, but core has no valid execution entry point.";
+                    }
+                } catch (err) {
+                    console.error("Execution Error:", err);
+                    document.getElementById('status').innerText = "Error during execution: " + err.message;
+                }
+            } else {
+                document.getElementById('status').innerText = "Error: FS Virtual File System not attached.";
             }
         };
-
-        // Dynamically try loading mre_core.js or fallback mre.js
-        const coreScript = document.createElement('script');
-        coreScript.src = "mre_core.js";
-        coreScript.onerror = function() {
-            console.warn("mre_core.js not found, trying fallback mre.js");
-            const fallbackScript = document.createElement('script');
-            fallbackScript.src = "mre.js";
-            fallbackScript.onerror = function() {
-                document.getElementById('status').innerText = "Error: Failed to load WebAssembly core script.";
-            };
-            document.body.appendChild(fallbackScript);
-        };
-        document.body.appendChild(coreScript);
-
-        // Upload handler to inject .vxp binaries into virtual FS
-        document.getElementById('vxpInput').addEventListener('change', function(e) {
-            var file = e.target.files[0];
-            if (!file) return;
-
-            document.getElementById('status').innerText = "Loading " + file.name + "...";
-
-            var reader = new FileReader();
-            reader.onload = function(evt) {
-                var uint8Array = new Uint8Array(evt.target.result);
-
-                if (typeof FS !== 'undefined') {
-                    try {
-                        FS.writeFile('/app.vxp', uint8Array);
-                        document.getElementById('status').innerText = "Running " + file.name;
-
-                        if (typeof Module._run_vxp === 'function') {
-                            Module._run_vxp('/app.vxp');
-                        } else if (typeof Module._main === 'function') {
-                            Module._main();
-                        } else if (typeof callMain === 'function') {
-                            callMain(['/app.vxp']);
-                        }
-                    } catch (err) {
-                        console.error("FS Error:", err);
-                        document.getElementById('status').innerText = "FS Write Error: " + err.message;
-                    }
-                } else {
-                    document.getElementById('status').innerText = "Error: FS Virtual File System not attached.";
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        });
-    </script>
-</body>
-</html>
+        reader.readAsArrayBuffer(file);
+    });
+</script>
