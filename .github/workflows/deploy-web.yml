@@ -47,10 +47,13 @@ jobs:
           mkdir -p dist
           cp index.html dist/
           
-          # Find all JS and WASM files anywhere in the build trees and copy them to dist root
+          # Move files inside 'cores' directly to 'dist/' root if present
+          if [ -d "cores" ]; then cp -r cores/* dist/; fi
+          
+          # Copy any nested JS and WASM files to root dist/
           find . -type f \( -name "*.wasm" -o -name "*.js" \) ! -path "./dist/*" -exec cp -v {} dist/ \;
           
-          echo "=== COPIED DIST FILES ==="
+          echo "=== FLAT DIST CONTENTS ==="
           ls -la dist/
 
       - name: Upload Artifact
