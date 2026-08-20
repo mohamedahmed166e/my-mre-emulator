@@ -13,18 +13,62 @@
             margin: 0;
             padding: 40px 20px;
         }
+        .controls {
+            margin: 20px 0;
+        }
+        input[type="file"] {
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
         canvas { 
             background: #000000; 
             border: 2px solid #333333; 
             border-radius: 8px;
-            margin-top: 20px; 
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
     </style>
 </head>
 <body>
     <h1>MRE .vxp Web Emulator</h1>
-    <p>WebAssembly core loaded successfully.</p>
-    <canvas id="canvas" width="240" height="320"></canvas>
+    <p>Select a MediaTek MRE <code>.vxp</code> app or game to run in WebAssembly.</p>
+
+    <div class="controls">
+        <input type="file" id="vxpInput" accept=".vxp">
+    </div>
+
+    <canvas id="canvas" width="240" height="320" tabindex="1"></canvas>
+
+    <script>
+        var Module = {
+            canvas: (function() {
+                return document.getElementById('canvas');
+            })()
+        };
+
+        document.getElementById('vxpInput').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+
+            var reader = new FileReader();
+            reader.onload = function(evt) {
+                var arrayBuffer = evt.target.result;
+                var uint8Array = new Uint8Array(arrayBuffer);
+
+                // Mount binary into Emscripten Virtual File System if Module initialized
+                if (typeof FS !== 'undefined') {
+                    FS.writeFile('/app.vxp', uint8Array);
+                    console.log('Successfully loaded app.vxp into VFS');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+    
+    <!-- Dynamically link Emscripten JS glue artifact -->
+    <script src="mre_core.js" onerror="console.warn('mre_core.js not found yet in root dist')"></script>
 </body>
 </html>
