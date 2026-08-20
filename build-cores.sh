@@ -4,6 +4,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DIST="$HERE/dist"
 
+rm -rf "$DIST"
 mkdir -p "$DIST"
 
 echo "=== Compiling MRE Core for WebAssembly ==="
@@ -24,7 +25,6 @@ while IFS= read -r dir; do
     fi
 done < <(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u)
 
-# Compile using Emscripten without forcing specific symbol exports
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
@@ -36,5 +36,5 @@ emcc $C_FILES \
   -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall","callMain"]' \
   -o "$DIST/mre_core.js"
 
-echo "=== BUILD SUCCESSFUL ==="
+echo "=== BUILD COMPLETE ==="
 ls -la "$DIST"
