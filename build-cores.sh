@@ -4,8 +4,6 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DIST="$HERE/dist"
 
-# Ensure clean dist directory
-rm -rf "$DIST"
 mkdir -p "$DIST"
 
 echo "=== Compiling MRE Core for WebAssembly ==="
@@ -17,10 +15,8 @@ if [ ! -d "$CORE_DIR" ]; then
     exit 1
 fi
 
-# Find all C source files inside mre-core
 C_FILES=$(find "$CORE_DIR" -type f -name "*.c")
 
-# Discover all header directories dynamically
 INCLUDE_FLAGS=""
 while IFS= read -r dir; do
     if [ -n "$dir" ]; then
@@ -28,7 +24,7 @@ while IFS= read -r dir; do
     fi
 done < <(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u)
 
-# Compile to dist/mre_core.js and dist/mre_core.wasm
+# Export functions and enable async execution support
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
@@ -37,8 +33,9 @@ emcc $C_FILES \
   -s ALLOW_MEMORY_GROWTH=1 \
   -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
   -s WARN_ON_UNDEFINED_SYMBOLS=0 \
-  -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall"]' \
+  -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall","callMain"]' \
+  -s EXPORTED_FUNCTIONS='["_main","_retro_init","_retro_run","_retro_load_game"]' \
   -o "$DIST/mre_core.js"
 
-echo "=== VERIFYING GENERATED DIST ASSETS ==="
+echo "=== BUILD SUCCESSFUL ==="
 ls -la "$DIST"
