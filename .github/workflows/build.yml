@@ -10,11 +10,16 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout Code & Submodules
+      - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
+
+      - name: Clone Unicorn Submodule
+        run: |
+          mkdir -p mre-core/vendor
+          cd mre-core/vendor
+          if (-not (Test-Path "unicorn")) {
+            git clone https://github.com/unicorn-engine/unicorn.git
+          }
 
       - name: Setup Zig Compiler
         uses: mlugg/setup-zig@v2
@@ -23,21 +28,17 @@ jobs:
 
       - name: Build Unicorn Dependency
         run: |
-          if (Test-Path "mre-core/vendor/unicorn") {
-            cd mre-core/vendor/unicorn
-          } else {
-            cd vendor/unicorn
-          }
+          cd mre-core/vendor/unicorn
           cmake -B build -A x64 -DUNICORN_BUILD_SAMPLES=OFF -DUNICORN_BUILD_TESTS=OFF
           cmake --build build --config Release
 
       - name: Build Executable with Zig
         run: |
-          if (Test-Path "mre-core") { cd mre-core }
+          cd mre-core
           zig build -Doptimize=ReleaseFast
 
       - name: Upload Windows Binary Artifact
         uses: actions/upload-artifact@v4
         with:
           name: mre-emulator-windows
-          path: "**/zig-out/bin/"
+          path: mre-core/zig-out/bin/
