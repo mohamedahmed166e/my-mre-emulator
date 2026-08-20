@@ -2,73 +2,100 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MRE .vxp Mobile Emulator</title>
     <style>
+        * { box-sizing: border-box; }
         body { 
             background-color: #0d0d0d; 
             color: #ffffff; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             text-align: center; 
             margin: 0;
-            padding: 20px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
         }
 
-        /* Mobile Device Frame */
+        h2 { margin: 10px 0; font-size: 1.4rem; }
+
+        .controls { margin-bottom: 15px; }
+        input[type="file"] {
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 8px 12px;
+            border-radius: 6px;
+            max-width: 90vw;
+        }
+
+        /* Fully Responsive Phone Chassis */
+        .phone-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            max-width: 360px;
+        }
+
         .phone-body {
-            width: 320px;
+            width: 100%;
+            max-width: 340px;
             background: linear-gradient(145deg, #2b2b2b, #1a1a1a);
             border: 4px solid #444;
-            border-radius: 35px;
-            padding: 20px 15px;
-            margin: 0 auto;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.2);
+            border-radius: 30px;
+            padding: 15px 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
         }
 
         .phone-header {
-            width: 60px;
-            height: 6px;
+            width: 50px;
+            height: 5px;
             background: #111;
             border-radius: 3px;
-            margin: 0 auto 15px auto;
+            margin: 0 auto 12px auto;
         }
 
         canvas { 
             background: #000; 
-            border: 3px solid #111; 
-            border-radius: 8px;
+            border: 2px solid #111; 
+            border-radius: 6px;
             display: block;
             margin: 0 auto;
-            width: 240px;
-            height: 320px;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            width: 100%;
+            max-width: 240px;
+            aspect-ratio: 240 / 320;
+            height: auto;
         }
 
-        /* Mobile Keypad Layout */
+        /* Responsive Keypad */
         .keypad {
-            margin-top: 15px;
+            margin-top: 12px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            padding: 0 10px;
+            gap: 6px;
+            padding: 0 4px;
         }
 
         .btn {
             background: #333;
             color: #fff;
             border: 1px solid #555;
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 10px 0;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             user-select: none;
-            box-shadow: 0 3px 0 #111;
+            touch-action: manipulation;
+            box-shadow: 0 2px 0 #111;
         }
 
         .btn:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px 0 #111;
+            transform: translateY(1px);
+            box-shadow: none;
             background: #444;
         }
 
@@ -76,34 +103,30 @@
         .btn-call { background: #1e5622; }
         .btn-end { background: #7a1c1c; }
 
-        /* On-Screen Console Output */
+        /* Responsive Console Output */
         .console-container {
-            width: 90%;
-            max-width: 600px;
-            margin: 25px auto 0 auto;
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
             text-align: left;
         }
 
         #consoleLog {
             background: #000;
             color: #00ff66;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 12px;
-            height: 120px;
-            padding: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            height: 100px;
+            padding: 8px;
             border: 1px solid #333;
             border-radius: 6px;
             overflow-y: auto;
             white-space: pre-wrap;
         }
 
-        .controls { margin-bottom: 15px; }
-        input[type="file"] {
-            background: #222;
-            color: #fff;
-            border: 1px solid #444;
-            padding: 8px;
-            border-radius: 4px;
+        @media (max-width: 400px) {
+            body { padding: 8px; }
+            .btn { padding: 8px 0; font-size: 12px; }
         }
     </style>
 </head>
@@ -115,39 +138,41 @@
         <input type="file" id="vxpInput" accept=".vxp">
     </div>
 
-    <div class="phone-body">
-        <div class="phone-header"></div>
-        <canvas id="canvas" width="240" height="320" tabindex="1"></canvas>
-        <div id="status" style="color:#aaa; font-size:12px; margin: 8px 0;">Engine Loading...</div>
+    <div class="phone-wrapper">
+        <div class="phone-body">
+            <div class="phone-header"></div>
+            <canvas id="canvas" width="240" height="320" tabindex="1"></canvas>
+            <div id="status" style="color:#aaa; font-size:11px; margin: 6px 0;">Engine Loading...</div>
 
-        <div class="keypad">
-            <button class="btn btn-action" onmousedown="sendKey(1, 1)" onmouseup="sendKey(1, 0)">LSK</button>
-            <button class="btn btn-action" onmousedown="sendKey(14, 1)" onmouseup="sendKey(14, 0)">UP</button>
-            <button class="btn btn-action" onmousedown="sendKey(2, 1)" onmouseup="sendKey(2, 0)">RSK</button>
+            <div class="keypad">
+                <button class="btn btn-action" onmousedown="sendKey(1, 1)" onmouseup="sendKey(1, 0)" ontouchstart="sendKey(1, 1)" ontouchend="sendKey(1, 0)">LSK</button>
+                <button class="btn btn-action" onmousedown="sendKey(14, 1)" onmouseup="sendKey(14, 0)" ontouchstart="sendKey(14, 1)" ontouchend="sendKey(14, 0)">UP</button>
+                <button class="btn btn-action" onmousedown="sendKey(2, 1)" onmouseup="sendKey(2, 0)" ontouchstart="sendKey(2, 1)" ontouchend="sendKey(2, 0)">RSK</button>
 
-            <button class="btn btn-action" onmousedown="sendKey(16, 1)" onmouseup="sendKey(16, 0)">LEFT</button>
-            <button class="btn btn-action" onmousedown="sendKey(13, 1)" onmouseup="sendKey(13, 0)">OK</button>
-            <button class="btn btn-action" onmousedown="sendKey(17, 1)" onmouseup="sendKey(17, 0)">RIGHT</button>
+                <button class="btn btn-action" onmousedown="sendKey(16, 1)" onmouseup="sendKey(16, 0)" ontouchstart="sendKey(16, 1)" ontouchend="sendKey(16, 0)">LEFT</button>
+                <button class="btn btn-action" onmousedown="sendKey(13, 1)" onmouseup="sendKey(13, 0)" ontouchstart="sendKey(13, 1)" ontouchend="sendKey(13, 0)">OK</button>
+                <button class="btn btn-action" onmousedown="sendKey(17, 1)" onmouseup="sendKey(17, 0)" ontouchstart="sendKey(17, 1)" ontouchend="sendKey(17, 0)">RIGHT</button>
 
-            <button class="btn btn-call" onmousedown="sendKey(3, 1)" onmouseup="sendKey(3, 0)">CALL</button>
-            <button class="btn btn-action" onmousedown="sendKey(15, 1)" onmouseup="sendKey(15, 0)">DOWN</button>
-            <button class="btn btn-end" onmousedown="sendKey(4, 1)" onmouseup="sendKey(4, 0)">END</button>
+                <button class="btn btn-call" onmousedown="sendKey(3, 1)" onmouseup="sendKey(3, 0)" ontouchstart="sendKey(3, 1)" ontouchend="sendKey(3, 0)">CALL</button>
+                <button class="btn btn-action" onmousedown="sendKey(15, 1)" onmouseup="sendKey(15, 0)" ontouchstart="sendKey(15, 1)" ontouchend="sendKey(15, 0)">DOWN</button>
+                <button class="btn btn-end" onmousedown="sendKey(4, 1)" onmouseup="sendKey(4, 0)" ontouchstart="sendKey(4, 1)" ontouchend="sendKey(4, 0)">END</button>
 
-            <button class="btn" onmousedown="sendKey(48, 1)" onmouseup="sendKey(48, 0)">1</button>
-            <button class="btn" onmousedown="sendKey(49, 1)" onmouseup="sendKey(49, 0)">2</button>
-            <button class="btn" onmousedown="sendKey(50, 1)" onmouseup="sendKey(50, 0)">3</button>
+                <button class="btn" onmousedown="sendKey(48, 1)" onmouseup="sendKey(48, 0)" ontouchstart="sendKey(48, 1)" ontouchend="sendKey(48, 0)">1</button>
+                <button class="btn" onmousedown="sendKey(49, 1)" onmouseup="sendKey(49, 0)" ontouchstart="sendKey(49, 1)" ontouchend="sendKey(49, 0)">2</button>
+                <button class="btn" onmousedown="sendKey(50, 1)" onmouseup="sendKey(50, 0)" ontouchstart="sendKey(50, 1)" ontouchend="sendKey(50, 0)">3</button>
 
-            <button class="btn" onmousedown="sendKey(51, 1)" onmouseup="sendKey(51, 0)">4</button>
-            <button class="btn" onmousedown="sendKey(52, 1)" onmouseup="sendKey(52, 0)">5</button>
-            <button class="btn" onmousedown="sendKey(53, 1)" onmouseup="sendKey(53, 0)">6</button>
+                <button class="btn" onmousedown="sendKey(51, 1)" onmouseup="sendKey(51, 0)" ontouchstart="sendKey(51, 1)" ontouchend="sendKey(51, 0)">4</button>
+                <button class="btn" onmousedown="sendKey(52, 1)" onmouseup="sendKey(52, 0)" ontouchstart="sendKey(52, 1)" ontouchend="sendKey(52, 0)">5</button>
+                <button class="btn" onmousedown="sendKey(53, 1)" onmouseup="sendKey(53, 0)" ontouchstart="sendKey(53, 1)" ontouchend="sendKey(53, 0)">6</button>
 
-            <button class="btn" onmousedown="sendKey(54, 1)" onmouseup="sendKey(54, 0)">7</button>
-            <button class="btn" onmousedown="sendKey(55, 1)" onmouseup="sendKey(55, 0)">8</button>
-            <button class="btn" onmousedown="sendKey(56, 1)" onmouseup="sendKey(56, 0)">9</button>
+                <button class="btn" onmousedown="sendKey(54, 1)" onmouseup="sendKey(54, 0)" ontouchstart="sendKey(54, 1)" ontouchend="sendKey(54, 0)">7</button>
+                <button class="btn" onmousedown="sendKey(55, 1)" onmouseup="sendKey(55, 0)" ontouchstart="sendKey(55, 1)" ontouchend="sendKey(55, 0)">8</button>
+                <button class="btn" onmousedown="sendKey(56, 1)" onmouseup="sendKey(56, 0)" ontouchstart="sendKey(56, 1)" ontouchend="sendKey(56, 0)">9</button>
 
-            <button class="btn" onmousedown="sendKey(42, 1)" onmouseup="sendKey(42, 0)">*</button>
-            <button class="btn" onmousedown="sendKey(47, 1)" onmouseup="sendKey(47, 0)">0</button>
-            <button class="btn" onmousedown="sendKey(35, 1)" onmouseup="sendKey(35, 0)">#</button>
+                <button class="btn" onmousedown="sendKey(42, 1)" onmouseup="sendKey(42, 0)" ontouchstart="sendKey(42, 1)" ontouchend="sendKey(42, 0)">*</button>
+                <button class="btn" onmousedown="sendKey(47, 1)" onmouseup="sendKey(47, 0)" ontouchstart="sendKey(47, 1)" ontouchend="sendKey(47, 0)">0</button>
+                <button class="btn" onmousedown="sendKey(35, 1)" onmouseup="sendKey(35, 0)" ontouchstart="sendKey(35, 1)" ontouchend="sendKey(35, 0)">#</button>
+            </div>
         </div>
     </div>
 
@@ -157,7 +182,6 @@
     </div>
 
     <script>
-        // Redirect stdout/stderr to embedded web console
         function logToWebConsole(text) {
             var el = document.getElementById('consoleLog');
             if (el) {
@@ -171,20 +195,17 @@
             print: function(text) { console.log(text); logToWebConsole("[LOG] " + text); },
             printErr: function(text) { console.error(text); logToWebConsole("[ERR] " + text); },
             onRuntimeInitialized: function() {
-                var statusEl = document.getElementById('status');
-                if (statusEl) statusEl.innerText = "Ready. Load a .vxp file.";
-                logToWebConsole("WebAssembly core initialized successfully.");
+                document.getElementById('status').innerText = "Ready. Select a .vxp file.";
+                logToWebConsole("WebAssembly core loaded.");
             }
         };
 
-        // Send Keypresses to WebAssembly
         function sendKey(code, isPressed) {
             if (typeof Module._send_mre_key === 'function') {
                 Module._send_mre_key(code, isPressed);
             }
         }
 
-        // File loader logic
         document.getElementById('vxpInput').addEventListener('change', function(e) {
             var file = e.target.files[0];
             if (!file) return;
@@ -206,7 +227,6 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // Keyboard bindings (Arrow keys + Enter + Numpad)
         window.addEventListener('keydown', function(e) {
             if (e.key === "ArrowUp") sendKey(14, 1);
             if (e.key === "ArrowDown") sendKey(15, 1);
