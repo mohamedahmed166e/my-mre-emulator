@@ -38,22 +38,15 @@ jobs:
       - name: Make Build Script Executable
         run: chmod +x build-cores.sh
 
-      - name: Run Build Core Script (Wasm Mode)
+      - name: Run Build Core Script for Web
         run: |
-          emconfigure ./build-cores.sh || true
+          export TARGET="wasm32-emscripten"
+          ./build-cores.sh
 
       - name: Prepare Web Assets
         run: |
-          mkdir -p dist
-          
-          # Copy root index.html into dist
           cp index.html dist/
-          
-          # Search entire repo for all compiled .js and .wasm files and copy to dist root
-          find . -type f \( -name "*.wasm" -o -name "*.js" \) ! -path "./dist/*" -exec cp {} dist/ \;
-          
-          # List files in dist to debug artifacts in workflow logs
-          echo "=== DIST CONTENTS ==="
+          echo "=== FINAL DIST CONTENTS ==="
           ls -la dist/
 
       - name: Upload Artifact
