@@ -10,7 +10,6 @@ permissions:
   pages: write
   id-token: write
 
-# Prevent concurrent deployments locking GitHub Pages
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -39,20 +38,16 @@ jobs:
       - name: Make Build Script Executable
         run: chmod +x build-cores.sh
 
-      - name: Run Build Core Script
+      - name: Run Build Core Script for Web
         run: |
-          ./build-cores.sh || true
+          export TARGET="wasm32-emscripten"
+          ./build-cores.sh
 
       - name: Prepare Web Assets
         run: |
-          mkdir -p dist
           cp index.html dist/
-          
-          # Copy outputs from dist/cores to dist root
-          if [ -d "dist/cores" ]; then cp -v dist/cores/* dist/ || true; fi
-          
-          # Catch-all search for compiled JS/WASM binaries
-          find . -type f \( -name "*.wasm" -o -name "*.js" \) ! -path "./dist/*" -exec cp -v {} dist/ \;
+          echo "=== FINAL DIST CONTENTS ==="
+          ls -la dist/
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
