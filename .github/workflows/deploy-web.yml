@@ -28,13 +28,14 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - name: Fetch Missing minimp3 Headers
+      - name: Fetch Missing Audio Headers
         run: |
           mkdir -p mre-core/core
           curl -sSL "https://raw.githubusercontent.com/lieff/minimp3/master/minimp3.h" -o mre-core/core/minimp3.h
           curl -sSL "https://raw.githubusercontent.com/lieff/minimp3/master/minimp3_ex.h" -o mre-core/core/minimp3_ex.h
-          echo "=== VERIFYING MINIMP3 HEADERS ==="
-          ls -la mre-core/core/minimp3*
+          curl -sSL "https://raw.githubusercontent.com/schellingb/tinysoundfont/master/tsf.h" -o mre-core/core/tsf.h
+          echo "=== VERIFYING HEADERS ==="
+          ls -la mre-core/core/
 
       - name: Setup Emscripten Toolchain
         uses: mymindstorm/setup-emsdk@v14
