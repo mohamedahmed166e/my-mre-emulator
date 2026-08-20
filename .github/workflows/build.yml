@@ -13,27 +13,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1
-
       - name: Clone Unicorn Submodule
         run: |
           mkdir -p mre-core/vendor
-          cd mre-core/vendor
-          if (-not (Test-Path "unicorn")) {
-            git clone https://github.com/unicorn-engine/unicorn.git
+          if (-not (Test-Path "mre-core/vendor/unicorn")) {
+            git clone https://github.com/unicorn-engine/unicorn.git mre-core/vendor/unicorn
           }
-
-      - name: Install Dependencies via vcpkg
-        run: |
-          vcpkg install sdl3:x64-windows
 
       - name: Setup Zig Compiler
         uses: mlugg/setup-zig@v2
         with:
           version: 0.15.0
 
-      - name: Build Unicorn Engine
+      - name: Build Unicorn Dependency
         run: |
           cd mre-core/vendor/unicorn
           cmake -B build -A x64 -DUNICORN_BUILD_SAMPLES=OFF -DUNICORN_BUILD_TESTS=OFF
@@ -45,14 +37,7 @@ jobs:
       - name: Build Executable with Zig
         run: |
           cd mre-core
-          $unicorndir = (Resolve-Path "vendor/unicorn").Path
-          $unicornbuild = (Resolve-Path "vendor/unicorn/build").Path
-          $sdl3dir = "C:\vcpkg\installed\x64-windows"
-
-          $env:INCLUDE += ";$unicorndir\include;$sdl3dir\include"
-          $env:LIB += ";$unicornbuild;$unicornbuild\lib;$sdl3dir\lib"
-
-          zig build -Doptimize=ReleaseFast --search-prefix "$unicornbuild" --search-prefix "$sdl3dir"
+          zig build -Doptimize=ReleaseFast
 
       - name: Upload Windows Binary Artifact
         uses: actions/upload-artifact@v4
