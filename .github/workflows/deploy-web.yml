@@ -45,8 +45,11 @@ jobs:
       - name: Prepare Web Assets
         run: |
           mkdir -p dist
-          # Copy web frontend assets and built wasm outputs
-          if [ -d "web" ]; then cp -r web/* dist/; fi
+          
+          # Copy root index.html into dist
+          cp index.html dist/
+          
+          # Copy all compiled .wasm and .js binary artifacts
           find . -maxdepth 3 -name "*.wasm" -o -name "*.js" -exec cp {} dist/ \;
 
       - name: Upload Artifact
