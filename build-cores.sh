@@ -6,23 +6,33 @@ DIST="$HERE/dist"
 
 mkdir -p "$DIST"
 
-echo "=== Building MRE Core for WebAssembly ==="
+echo "=== Compiling MRE Core for WebAssembly ==="
 
-# Navigate to core directory
-if [ -d "$HERE/mre-core" ]; then
-    cd "$HERE/mre-core"
-else
-    echo "ERROR: mre-core directory not found!"
+CORE_DIR="$HERE/mre-core"
+
+if [ ! -d "$CORE_DIR" ]; then
+    echo "ERROR: mre-core directory does not exist!"
     exit 1
 fi
 
-# Build Wasm using Zig
-if [ -f "build.zig" ]; then
-    zig build -Dtarget=wasm32-emscripten -Doptimize=ReleaseSmall || zig build -Doptimize=ReleaseSmall || true
+# Find all C files inside mre-core
+C_FILES=$(find "$CORE_DIR" -type f -name "*.c")
+
+if [ -z "$C_FILES" ]; then
+    echo "ERROR: No .c files found in $CORE_DIR"
+    exit 1
 fi
 
-# Search and copy all generated .js and .wasm files directly into dist/
-find "$HERE" -type f \( -name "*.wasm" -o -name "*.js" \) ! -path "*/dist/*" -exec cp -v {} "$DIST/" \;
+echo "Found C sources:"
+echo "$C_FILES"
 
-echo "=== DIST DIRECTORY CONTENTS ==="
+# Compile directly using Emscripten to output mre_core.js and mre_core.wasm
+emcc $C_FILES -O2 \
+  -s WASM=1 \
+  -s FORCE_FILESYSTEM=1 \
+  -s EXPORTED_RUNTIME_METHODS='["FS","callMain"]' \
+  -s ALLOW_MEMORY_GROWTH=1 \
+  -o "$DIST/mre_core.js"
+
+echo "=== BUILD OUTPUT CONTENTS ==="
 ls -la "$DIST"
