@@ -10,7 +10,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Code & Submodules
         uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -19,6 +19,16 @@ jobs:
         uses: mlugg/setup-zig@v2
         with:
           version: 0.15.0
+
+      - name: Build C Dependencies (Unicorn)
+        run: |
+          if (Test-Path "mre-core/vendor/unicorn") {
+            cd mre-core/vendor/unicorn
+            mkdir build -ErrorAction SilentlyContinue
+            cd build
+            cmake .. -A x64
+            cmake --build . --config Release
+          }
 
       - name: Build Executable
         run: |
