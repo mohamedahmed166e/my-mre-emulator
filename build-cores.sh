@@ -25,7 +25,7 @@ while IFS= read -r dir; do
     fi
 done < <(find "$HERE" -type f \( -name "*.h" -o -name "*.hpp" \) -exec dirname {} \; | sort -u)
 
-# -s INVOKE_RUN=0 prevents Emscripten from auto-calling non-existent callMain/main on load
+# Export functions and runtime helpers without forcing fatal build errors on missing C symbols
 emcc $C_FILES \
   $INCLUDE_FLAGS \
   -O2 \
@@ -35,7 +35,8 @@ emcc $C_FILES \
   -s INVOKE_RUN=0 \
   -s ERROR_ON_UNDEFINED_SYMBOLS=0 \
   -s WARN_ON_UNDEFINED_SYMBOLS=0 \
-  -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall"]' \
+  -s EXPORT_ALL=1 \
+  -s EXPORTED_RUNTIME_METHODS='["FS","cwrap","ccall","getValue","setValue"]' \
   -o "$DIST/mre_core.js"
 
 echo "=== BUILD COMPLETE ==="
